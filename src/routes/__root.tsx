@@ -81,9 +81,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "한 번 등록한 프로필과 자료로 여러 공연에 지원하고, 공연사는 지원자를 한 화면에서 검토하는 프로토타입" },
       { name: "author", content: "공연 지원 플랫폼" },
       { property: "og:title", content: "공연 지원 플랫폼" },
-      { property: "og:description", content: "공연 지원자와 공연사를 위한 지원·검토 프로토타입" },
+      { property: "og:description", content: "한 번 등록한 프로필과 자료로 여러 공연에 지원하고, 공연사는 지원자를 한 화면에서 검토하는 프로토타입" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "공연 지원 플랫폼" },
+      { name: "twitter:description", content: "한 번 등록한 프로필과 자료로 여러 공연에 지원하고, 공연사는 지원자를 한 화면에서 검토하는 프로토타입" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7a1de4e4-f08e-45a9-b7cd-6dff6865b010/id-preview-2381ce50--ef0d6275-8181-4eb9-9f05-4938bee8618e.lovable.app-1784008481324.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7a1de4e4-f08e-45a9-b7cd-6dff6865b010/id-preview-2381ce50--ef0d6275-8181-4eb9-9f05-4938bee8618e.lovable.app-1784008481324.png" },
     ],
     links: [
       {
