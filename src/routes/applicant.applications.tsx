@@ -9,7 +9,8 @@ export const Route = createFileRoute("/applicant/applications")({
 });
 
 function MyApplications() {
-  const apps = useStore((s) => s.applications.filter((a) => a.applicantId === "me"));
+  const allApps = useStore((s) => s.applications);
+  const apps = allApps.filter((a) => a.applicantId === "me");
   const [statusFilter, setStatusFilter] = useState<"전체" | ApplyStatus>("전체");
   const [sort, setSort] = useState<"최신순" | "마감 임박">("최신순");
 

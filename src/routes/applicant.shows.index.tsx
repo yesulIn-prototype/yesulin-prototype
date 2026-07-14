@@ -11,7 +11,8 @@ export const Route = createFileRoute("/applicant/shows/")({
 
 function ShowsList() {
   const shows = useStore((s) => s.shows);
-  const applications = useStore((s) => s.applications.filter((a) => a.applicantId === "me"));
+  const allApps = useStore((s) => s.applications);
+  const applications = allApps.filter((a) => a.applicantId === "me");
   const appliedIds = new Set(applications.map((a) => a.showId));
 
   const [q, setQ] = useState("");

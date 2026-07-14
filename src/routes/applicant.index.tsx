@@ -10,7 +10,8 @@ export const Route = createFileRoute("/applicant/")({
 
 function ApplicantHome() {
   const applicant = useStore((s) => s.applicant);
-  const applications = useStore((s) => s.applications.filter((a) => a.applicantId === "me"));
+  const allApps = useStore((s) => s.applications);
+  const applications = allApps.filter((a) => a.applicantId === "me");
   const shows = useStore((s) => s.shows);
 
   const submitted = applications.length;

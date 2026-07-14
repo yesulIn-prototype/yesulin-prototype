@@ -13,7 +13,8 @@ const REVIEW_STATUSES: ReviewStatus[] = ["미확인", "검토 중", "오디션 �
 function ShowApplicants() {
   const { id } = Route.useParams();
   const show = useStore((s) => s.shows.find((sh) => sh.id === id));
-  const apps = useStore((s) => s.applications.filter((a) => a.showId === id));
+  const allApps = useStore((s) => s.applications);
+  const apps = allApps.filter((a) => a.showId === id);
 
   const [roleFilter, setRoleFilter] = useState<string>("전체");
   const [statusFilter, setStatusFilter] = useState<string>("전체");
