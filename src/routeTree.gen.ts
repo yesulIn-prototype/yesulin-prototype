@@ -13,6 +13,9 @@ import { Route as ApplicantRouteImport } from './routes/applicant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicantIndexRouteImport } from './routes/applicant.index'
 import { Route as ApplicantShowsRouteImport } from './routes/applicant.shows'
+import { Route as ApplicantProfileRouteImport } from './routes/applicant.profile'
+import { Route as ApplicantFilesRouteImport } from './routes/applicant.files'
+import { Route as ApplicantApplicationsRouteImport } from './routes/applicant.applications'
 import { Route as ApplicantShowsIdRouteImport } from './routes/applicant.shows.$id'
 import { Route as ApplicantShowsIdCompleteRouteImport } from './routes/applicant.shows.$id.complete'
 import { Route as ApplicantShowsIdApplyRouteImport } from './routes/applicant.shows.$id.apply'
@@ -37,6 +40,21 @@ const ApplicantShowsRoute = ApplicantShowsRouteImport.update({
   path: '/shows',
   getParentRoute: () => ApplicantRoute,
 } as any)
+const ApplicantProfileRoute = ApplicantProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ApplicantFilesRoute = ApplicantFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ApplicantApplicationsRoute = ApplicantApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => ApplicantRoute,
+} as any)
 const ApplicantShowsIdRoute = ApplicantShowsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -57,6 +75,9 @@ const ApplicantShowsIdApplyRoute = ApplicantShowsIdApplyRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
+  '/applicant/applications': typeof ApplicantApplicationsRoute
+  '/applicant/files': typeof ApplicantFilesRoute
+  '/applicant/profile': typeof ApplicantProfileRoute
   '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
   '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
@@ -65,6 +86,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/applicant/applications': typeof ApplicantApplicationsRoute
+  '/applicant/files': typeof ApplicantFilesRoute
+  '/applicant/profile': typeof ApplicantProfileRoute
   '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant': typeof ApplicantIndexRoute
   '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
@@ -75,6 +99,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
+  '/applicant/applications': typeof ApplicantApplicationsRoute
+  '/applicant/files': typeof ApplicantFilesRoute
+  '/applicant/profile': typeof ApplicantProfileRoute
   '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
   '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
@@ -86,6 +113,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/applicant'
+    | '/applicant/applications'
+    | '/applicant/files'
+    | '/applicant/profile'
     | '/applicant/shows'
     | '/applicant/'
     | '/applicant/shows/$id'
@@ -94,6 +124,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/applicant/applications'
+    | '/applicant/files'
+    | '/applicant/profile'
     | '/applicant/shows'
     | '/applicant'
     | '/applicant/shows/$id'
@@ -103,6 +136,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/applicant'
+    | '/applicant/applications'
+    | '/applicant/files'
+    | '/applicant/profile'
     | '/applicant/shows'
     | '/applicant/'
     | '/applicant/shows/$id'
@@ -143,6 +179,27 @@ declare module '@tanstack/react-router' {
       path: '/shows'
       fullPath: '/applicant/shows'
       preLoaderRoute: typeof ApplicantShowsRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/applicant/profile': {
+      id: '/applicant/profile'
+      path: '/profile'
+      fullPath: '/applicant/profile'
+      preLoaderRoute: typeof ApplicantProfileRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/applicant/files': {
+      id: '/applicant/files'
+      path: '/files'
+      fullPath: '/applicant/files'
+      preLoaderRoute: typeof ApplicantFilesRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/applicant/applications': {
+      id: '/applicant/applications'
+      path: '/applications'
+      fullPath: '/applicant/applications'
+      preLoaderRoute: typeof ApplicantApplicationsRouteImport
       parentRoute: typeof ApplicantRoute
     }
     '/applicant/shows/$id': {
@@ -195,11 +252,17 @@ const ApplicantShowsRouteWithChildren = ApplicantShowsRoute._addFileChildren(
 )
 
 interface ApplicantRouteChildren {
+  ApplicantApplicationsRoute: typeof ApplicantApplicationsRoute
+  ApplicantFilesRoute: typeof ApplicantFilesRoute
+  ApplicantProfileRoute: typeof ApplicantProfileRoute
   ApplicantShowsRoute: typeof ApplicantShowsRouteWithChildren
   ApplicantIndexRoute: typeof ApplicantIndexRoute
 }
 
 const ApplicantRouteChildren: ApplicantRouteChildren = {
+  ApplicantApplicationsRoute: ApplicantApplicationsRoute,
+  ApplicantFilesRoute: ApplicantFilesRoute,
+  ApplicantProfileRoute: ApplicantProfileRoute,
   ApplicantShowsRoute: ApplicantShowsRouteWithChildren,
   ApplicantIndexRoute: ApplicantIndexRoute,
 }
