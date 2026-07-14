@@ -5,7 +5,7 @@ import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
 import { Search } from "lucide-react";
 
-export const Route = createFileRoute("/applicant/shows")({
+export const Route = createFileRoute("/applicant/shows/")({
   component: ShowsList,
 });
 

@@ -4,7 +4,7 @@ import { useStore, daysUntil, type ReviewStatus } from "@/lib/store";
 import { ReviewBadge } from "@/components/status-badge";
 import { ChevronLeft, Check, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 
-export const Route = createFileRoute("/producer/shows/$id")({
+export const Route = createFileRoute("/producer/shows/$id/")({
   component: ShowApplicants,
 });
 

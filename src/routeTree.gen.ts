@@ -14,15 +14,15 @@ import { Route as ApplicantRouteImport } from './routes/applicant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProducerIndexRouteImport } from './routes/producer.index'
 import { Route as ApplicantIndexRouteImport } from './routes/applicant.index'
-import { Route as ProducerShowsRouteImport } from './routes/producer.shows'
 import { Route as ProducerCreateRouteImport } from './routes/producer.create'
 import { Route as ProducerApplicantsRouteImport } from './routes/producer.applicants'
-import { Route as ApplicantShowsRouteImport } from './routes/applicant.shows'
 import { Route as ApplicantProfileRouteImport } from './routes/applicant.profile'
 import { Route as ApplicantFilesRouteImport } from './routes/applicant.files'
 import { Route as ApplicantApplicationsRouteImport } from './routes/applicant.applications'
-import { Route as ProducerShowsIdRouteImport } from './routes/producer.shows.$id'
-import { Route as ApplicantShowsIdRouteImport } from './routes/applicant.shows.$id'
+import { Route as ProducerShowsIndexRouteImport } from './routes/producer.shows.index'
+import { Route as ApplicantShowsIndexRouteImport } from './routes/applicant.shows.index'
+import { Route as ProducerShowsIdIndexRouteImport } from './routes/producer.shows.$id.index'
+import { Route as ApplicantShowsIdIndexRouteImport } from './routes/applicant.shows.$id.index'
 import { Route as ApplicantShowsIdCompleteRouteImport } from './routes/applicant.shows.$id.complete'
 import { Route as ApplicantShowsIdApplyRouteImport } from './routes/applicant.shows.$id.apply'
 import { Route as ProducerShowsIdApplicantsAppIdRouteImport } from './routes/producer.shows.$id.applicants.$appId'
@@ -52,11 +52,6 @@ const ApplicantIndexRoute = ApplicantIndexRouteImport.update({
   path: '/',
   getParentRoute: () => ApplicantRoute,
 } as any)
-const ProducerShowsRoute = ProducerShowsRouteImport.update({
-  id: '/shows',
-  path: '/shows',
-  getParentRoute: () => ProducerRoute,
-} as any)
 const ProducerCreateRoute = ProducerCreateRouteImport.update({
   id: '/create',
   path: '/create',
@@ -66,11 +61,6 @@ const ProducerApplicantsRoute = ProducerApplicantsRouteImport.update({
   id: '/applicants',
   path: '/applicants',
   getParentRoute: () => ProducerRoute,
-} as any)
-const ApplicantShowsRoute = ApplicantShowsRouteImport.update({
-  id: '/shows',
-  path: '/shows',
-  getParentRoute: () => ApplicantRoute,
 } as any)
 const ApplicantProfileRoute = ApplicantProfileRouteImport.update({
   id: '/profile',
@@ -87,32 +77,42 @@ const ApplicantApplicationsRoute = ApplicantApplicationsRouteImport.update({
   path: '/applications',
   getParentRoute: () => ApplicantRoute,
 } as any)
-const ProducerShowsIdRoute = ProducerShowsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ProducerShowsRoute,
+const ProducerShowsIndexRoute = ProducerShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
+  getParentRoute: () => ProducerRoute,
 } as any)
-const ApplicantShowsIdRoute = ApplicantShowsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ApplicantShowsRoute,
+const ApplicantShowsIndexRoute = ApplicantShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ProducerShowsIdIndexRoute = ProducerShowsIdIndexRouteImport.update({
+  id: '/shows/$id/',
+  path: '/shows/$id/',
+  getParentRoute: () => ProducerRoute,
+} as any)
+const ApplicantShowsIdIndexRoute = ApplicantShowsIdIndexRouteImport.update({
+  id: '/shows/$id/',
+  path: '/shows/$id/',
+  getParentRoute: () => ApplicantRoute,
 } as any)
 const ApplicantShowsIdCompleteRoute =
   ApplicantShowsIdCompleteRouteImport.update({
-    id: '/complete',
-    path: '/complete',
-    getParentRoute: () => ApplicantShowsIdRoute,
+    id: '/shows/$id/complete',
+    path: '/shows/$id/complete',
+    getParentRoute: () => ApplicantRoute,
   } as any)
 const ApplicantShowsIdApplyRoute = ApplicantShowsIdApplyRouteImport.update({
-  id: '/apply',
-  path: '/apply',
-  getParentRoute: () => ApplicantShowsIdRoute,
+  id: '/shows/$id/apply',
+  path: '/shows/$id/apply',
+  getParentRoute: () => ApplicantRoute,
 } as any)
 const ProducerShowsIdApplicantsAppIdRoute =
   ProducerShowsIdApplicantsAppIdRouteImport.update({
-    id: '/applicants/$appId',
-    path: '/applicants/$appId',
-    getParentRoute: () => ProducerShowsIdRoute,
+    id: '/shows/$id/applicants/$appId',
+    path: '/shows/$id/applicants/$appId',
+    getParentRoute: () => ProducerRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -122,16 +122,16 @@ export interface FileRoutesByFullPath {
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
   '/applicant/profile': typeof ApplicantProfileRoute
-  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
-  '/producer/shows': typeof ProducerShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
   '/producer/': typeof ProducerIndexRoute
-  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
-  '/producer/shows/$id': typeof ProducerShowsIdRouteWithChildren
+  '/applicant/shows/': typeof ApplicantShowsIndexRoute
+  '/producer/shows/': typeof ProducerShowsIndexRoute
   '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
   '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
+  '/applicant/shows/$id/': typeof ApplicantShowsIdIndexRoute
+  '/producer/shows/$id/': typeof ProducerShowsIdIndexRoute
   '/producer/shows/$id/applicants/$appId': typeof ProducerShowsIdApplicantsAppIdRoute
 }
 export interface FileRoutesByTo {
@@ -139,16 +139,16 @@ export interface FileRoutesByTo {
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
   '/applicant/profile': typeof ApplicantProfileRoute
-  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
-  '/producer/shows': typeof ProducerShowsRouteWithChildren
   '/applicant': typeof ApplicantIndexRoute
   '/producer': typeof ProducerIndexRoute
-  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
-  '/producer/shows/$id': typeof ProducerShowsIdRouteWithChildren
+  '/applicant/shows': typeof ApplicantShowsIndexRoute
+  '/producer/shows': typeof ProducerShowsIndexRoute
   '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
   '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
+  '/applicant/shows/$id': typeof ApplicantShowsIdIndexRoute
+  '/producer/shows/$id': typeof ProducerShowsIdIndexRoute
   '/producer/shows/$id/applicants/$appId': typeof ProducerShowsIdApplicantsAppIdRoute
 }
 export interface FileRoutesById {
@@ -159,16 +159,16 @@ export interface FileRoutesById {
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
   '/applicant/profile': typeof ApplicantProfileRoute
-  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
-  '/producer/shows': typeof ProducerShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
   '/producer/': typeof ProducerIndexRoute
-  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
-  '/producer/shows/$id': typeof ProducerShowsIdRouteWithChildren
+  '/applicant/shows/': typeof ApplicantShowsIndexRoute
+  '/producer/shows/': typeof ProducerShowsIndexRoute
   '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
   '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
+  '/applicant/shows/$id/': typeof ApplicantShowsIdIndexRoute
+  '/producer/shows/$id/': typeof ProducerShowsIdIndexRoute
   '/producer/shows/$id/applicants/$appId': typeof ProducerShowsIdApplicantsAppIdRoute
 }
 export interface FileRouteTypes {
@@ -180,16 +180,16 @@ export interface FileRouteTypes {
     | '/applicant/applications'
     | '/applicant/files'
     | '/applicant/profile'
-    | '/applicant/shows'
     | '/producer/applicants'
     | '/producer/create'
-    | '/producer/shows'
     | '/applicant/'
     | '/producer/'
-    | '/applicant/shows/$id'
-    | '/producer/shows/$id'
+    | '/applicant/shows/'
+    | '/producer/shows/'
     | '/applicant/shows/$id/apply'
     | '/applicant/shows/$id/complete'
+    | '/applicant/shows/$id/'
+    | '/producer/shows/$id/'
     | '/producer/shows/$id/applicants/$appId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -197,16 +197,16 @@ export interface FileRouteTypes {
     | '/applicant/applications'
     | '/applicant/files'
     | '/applicant/profile'
-    | '/applicant/shows'
     | '/producer/applicants'
     | '/producer/create'
-    | '/producer/shows'
     | '/applicant'
     | '/producer'
-    | '/applicant/shows/$id'
-    | '/producer/shows/$id'
+    | '/applicant/shows'
+    | '/producer/shows'
     | '/applicant/shows/$id/apply'
     | '/applicant/shows/$id/complete'
+    | '/applicant/shows/$id'
+    | '/producer/shows/$id'
     | '/producer/shows/$id/applicants/$appId'
   id:
     | '__root__'
@@ -216,16 +216,16 @@ export interface FileRouteTypes {
     | '/applicant/applications'
     | '/applicant/files'
     | '/applicant/profile'
-    | '/applicant/shows'
     | '/producer/applicants'
     | '/producer/create'
-    | '/producer/shows'
     | '/applicant/'
     | '/producer/'
-    | '/applicant/shows/$id'
-    | '/producer/shows/$id'
+    | '/applicant/shows/'
+    | '/producer/shows/'
     | '/applicant/shows/$id/apply'
     | '/applicant/shows/$id/complete'
+    | '/applicant/shows/$id/'
+    | '/producer/shows/$id/'
     | '/producer/shows/$id/applicants/$appId'
   fileRoutesById: FileRoutesById
 }
@@ -272,13 +272,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantIndexRouteImport
       parentRoute: typeof ApplicantRoute
     }
-    '/producer/shows': {
-      id: '/producer/shows'
-      path: '/shows'
-      fullPath: '/producer/shows'
-      preLoaderRoute: typeof ProducerShowsRouteImport
-      parentRoute: typeof ProducerRoute
-    }
     '/producer/create': {
       id: '/producer/create'
       path: '/create'
@@ -292,13 +285,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/producer/applicants'
       preLoaderRoute: typeof ProducerApplicantsRouteImport
       parentRoute: typeof ProducerRoute
-    }
-    '/applicant/shows': {
-      id: '/applicant/shows'
-      path: '/shows'
-      fullPath: '/applicant/shows'
-      preLoaderRoute: typeof ApplicantShowsRouteImport
-      parentRoute: typeof ApplicantRoute
     }
     '/applicant/profile': {
       id: '/applicant/profile'
@@ -321,125 +307,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantApplicationsRouteImport
       parentRoute: typeof ApplicantRoute
     }
-    '/producer/shows/$id': {
-      id: '/producer/shows/$id'
-      path: '/$id'
-      fullPath: '/producer/shows/$id'
-      preLoaderRoute: typeof ProducerShowsIdRouteImport
-      parentRoute: typeof ProducerShowsRoute
+    '/producer/shows/': {
+      id: '/producer/shows/'
+      path: '/shows'
+      fullPath: '/producer/shows/'
+      preLoaderRoute: typeof ProducerShowsIndexRouteImport
+      parentRoute: typeof ProducerRoute
     }
-    '/applicant/shows/$id': {
-      id: '/applicant/shows/$id'
-      path: '/$id'
-      fullPath: '/applicant/shows/$id'
-      preLoaderRoute: typeof ApplicantShowsIdRouteImport
-      parentRoute: typeof ApplicantShowsRoute
+    '/applicant/shows/': {
+      id: '/applicant/shows/'
+      path: '/shows'
+      fullPath: '/applicant/shows/'
+      preLoaderRoute: typeof ApplicantShowsIndexRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/producer/shows/$id/': {
+      id: '/producer/shows/$id/'
+      path: '/shows/$id'
+      fullPath: '/producer/shows/$id/'
+      preLoaderRoute: typeof ProducerShowsIdIndexRouteImport
+      parentRoute: typeof ProducerRoute
+    }
+    '/applicant/shows/$id/': {
+      id: '/applicant/shows/$id/'
+      path: '/shows/$id'
+      fullPath: '/applicant/shows/$id/'
+      preLoaderRoute: typeof ApplicantShowsIdIndexRouteImport
+      parentRoute: typeof ApplicantRoute
     }
     '/applicant/shows/$id/complete': {
       id: '/applicant/shows/$id/complete'
-      path: '/complete'
+      path: '/shows/$id/complete'
       fullPath: '/applicant/shows/$id/complete'
       preLoaderRoute: typeof ApplicantShowsIdCompleteRouteImport
-      parentRoute: typeof ApplicantShowsIdRoute
+      parentRoute: typeof ApplicantRoute
     }
     '/applicant/shows/$id/apply': {
       id: '/applicant/shows/$id/apply'
-      path: '/apply'
+      path: '/shows/$id/apply'
       fullPath: '/applicant/shows/$id/apply'
       preLoaderRoute: typeof ApplicantShowsIdApplyRouteImport
-      parentRoute: typeof ApplicantShowsIdRoute
+      parentRoute: typeof ApplicantRoute
     }
     '/producer/shows/$id/applicants/$appId': {
       id: '/producer/shows/$id/applicants/$appId'
-      path: '/applicants/$appId'
+      path: '/shows/$id/applicants/$appId'
       fullPath: '/producer/shows/$id/applicants/$appId'
       preLoaderRoute: typeof ProducerShowsIdApplicantsAppIdRouteImport
-      parentRoute: typeof ProducerShowsIdRoute
+      parentRoute: typeof ProducerRoute
     }
   }
 }
-
-interface ApplicantShowsIdRouteChildren {
-  ApplicantShowsIdApplyRoute: typeof ApplicantShowsIdApplyRoute
-  ApplicantShowsIdCompleteRoute: typeof ApplicantShowsIdCompleteRoute
-}
-
-const ApplicantShowsIdRouteChildren: ApplicantShowsIdRouteChildren = {
-  ApplicantShowsIdApplyRoute: ApplicantShowsIdApplyRoute,
-  ApplicantShowsIdCompleteRoute: ApplicantShowsIdCompleteRoute,
-}
-
-const ApplicantShowsIdRouteWithChildren =
-  ApplicantShowsIdRoute._addFileChildren(ApplicantShowsIdRouteChildren)
-
-interface ApplicantShowsRouteChildren {
-  ApplicantShowsIdRoute: typeof ApplicantShowsIdRouteWithChildren
-}
-
-const ApplicantShowsRouteChildren: ApplicantShowsRouteChildren = {
-  ApplicantShowsIdRoute: ApplicantShowsIdRouteWithChildren,
-}
-
-const ApplicantShowsRouteWithChildren = ApplicantShowsRoute._addFileChildren(
-  ApplicantShowsRouteChildren,
-)
 
 interface ApplicantRouteChildren {
   ApplicantApplicationsRoute: typeof ApplicantApplicationsRoute
   ApplicantFilesRoute: typeof ApplicantFilesRoute
   ApplicantProfileRoute: typeof ApplicantProfileRoute
-  ApplicantShowsRoute: typeof ApplicantShowsRouteWithChildren
   ApplicantIndexRoute: typeof ApplicantIndexRoute
+  ApplicantShowsIndexRoute: typeof ApplicantShowsIndexRoute
+  ApplicantShowsIdApplyRoute: typeof ApplicantShowsIdApplyRoute
+  ApplicantShowsIdCompleteRoute: typeof ApplicantShowsIdCompleteRoute
+  ApplicantShowsIdIndexRoute: typeof ApplicantShowsIdIndexRoute
 }
 
 const ApplicantRouteChildren: ApplicantRouteChildren = {
   ApplicantApplicationsRoute: ApplicantApplicationsRoute,
   ApplicantFilesRoute: ApplicantFilesRoute,
   ApplicantProfileRoute: ApplicantProfileRoute,
-  ApplicantShowsRoute: ApplicantShowsRouteWithChildren,
   ApplicantIndexRoute: ApplicantIndexRoute,
+  ApplicantShowsIndexRoute: ApplicantShowsIndexRoute,
+  ApplicantShowsIdApplyRoute: ApplicantShowsIdApplyRoute,
+  ApplicantShowsIdCompleteRoute: ApplicantShowsIdCompleteRoute,
+  ApplicantShowsIdIndexRoute: ApplicantShowsIdIndexRoute,
 }
 
 const ApplicantRouteWithChildren = ApplicantRoute._addFileChildren(
   ApplicantRouteChildren,
 )
 
-interface ProducerShowsIdRouteChildren {
-  ProducerShowsIdApplicantsAppIdRoute: typeof ProducerShowsIdApplicantsAppIdRoute
-}
-
-const ProducerShowsIdRouteChildren: ProducerShowsIdRouteChildren = {
-  ProducerShowsIdApplicantsAppIdRoute: ProducerShowsIdApplicantsAppIdRoute,
-}
-
-const ProducerShowsIdRouteWithChildren = ProducerShowsIdRoute._addFileChildren(
-  ProducerShowsIdRouteChildren,
-)
-
-interface ProducerShowsRouteChildren {
-  ProducerShowsIdRoute: typeof ProducerShowsIdRouteWithChildren
-}
-
-const ProducerShowsRouteChildren: ProducerShowsRouteChildren = {
-  ProducerShowsIdRoute: ProducerShowsIdRouteWithChildren,
-}
-
-const ProducerShowsRouteWithChildren = ProducerShowsRoute._addFileChildren(
-  ProducerShowsRouteChildren,
-)
-
 interface ProducerRouteChildren {
   ProducerApplicantsRoute: typeof ProducerApplicantsRoute
   ProducerCreateRoute: typeof ProducerCreateRoute
-  ProducerShowsRoute: typeof ProducerShowsRouteWithChildren
   ProducerIndexRoute: typeof ProducerIndexRoute
+  ProducerShowsIndexRoute: typeof ProducerShowsIndexRoute
+  ProducerShowsIdIndexRoute: typeof ProducerShowsIdIndexRoute
+  ProducerShowsIdApplicantsAppIdRoute: typeof ProducerShowsIdApplicantsAppIdRoute
 }
 
 const ProducerRouteChildren: ProducerRouteChildren = {
   ProducerApplicantsRoute: ProducerApplicantsRoute,
   ProducerCreateRoute: ProducerCreateRoute,
-  ProducerShowsRoute: ProducerShowsRouteWithChildren,
   ProducerIndexRoute: ProducerIndexRoute,
+  ProducerShowsIndexRoute: ProducerShowsIndexRoute,
+  ProducerShowsIdIndexRoute: ProducerShowsIdIndexRoute,
+  ProducerShowsIdApplicantsAppIdRoute: ProducerShowsIdApplicantsAppIdRoute,
 }
 
 const ProducerRouteWithChildren = ProducerRoute._addFileChildren(

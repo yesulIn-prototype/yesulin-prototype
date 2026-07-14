@@ -4,7 +4,7 @@ import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
 import { CalendarDays, MapPin, Users2, Coins, CheckCircle2, ChevronLeft } from "lucide-react";
 
-export const Route = createFileRoute("/applicant/shows/$id")({
+export const Route = createFileRoute("/applicant/shows/$id/")({
   component: ShowDetail,
 });
 

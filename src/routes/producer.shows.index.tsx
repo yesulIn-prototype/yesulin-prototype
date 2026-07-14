@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useStore, daysUntil } from "@/lib/store";
 import { Poster } from "@/components/poster";
 
-export const Route = createFileRoute("/producer/shows")({
+export const Route = createFileRoute("/producer/shows/")({
   component: ShowsList,
 });
 
