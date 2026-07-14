@@ -13,6 +13,9 @@ import { Route as ApplicantRouteImport } from './routes/applicant'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicantIndexRouteImport } from './routes/applicant.index'
 import { Route as ApplicantShowsRouteImport } from './routes/applicant.shows'
+import { Route as ApplicantShowsIdRouteImport } from './routes/applicant.shows.$id'
+import { Route as ApplicantShowsIdCompleteRouteImport } from './routes/applicant.shows.$id.complete'
+import { Route as ApplicantShowsIdApplyRouteImport } from './routes/applicant.shows.$id.apply'
 
 const ApplicantRoute = ApplicantRouteImport.update({
   id: '/applicant',
@@ -34,31 +37,77 @@ const ApplicantShowsRoute = ApplicantShowsRouteImport.update({
   path: '/shows',
   getParentRoute: () => ApplicantRoute,
 } as any)
+const ApplicantShowsIdRoute = ApplicantShowsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApplicantShowsRoute,
+} as any)
+const ApplicantShowsIdCompleteRoute =
+  ApplicantShowsIdCompleteRouteImport.update({
+    id: '/complete',
+    path: '/complete',
+    getParentRoute: () => ApplicantShowsIdRoute,
+  } as any)
+const ApplicantShowsIdApplyRoute = ApplicantShowsIdApplyRouteImport.update({
+  id: '/apply',
+  path: '/apply',
+  getParentRoute: () => ApplicantShowsIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
-  '/applicant/shows': typeof ApplicantShowsRoute
+  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
+  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
+  '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
+  '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/applicant/shows': typeof ApplicantShowsRoute
+  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant': typeof ApplicantIndexRoute
+  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
+  '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
+  '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
-  '/applicant/shows': typeof ApplicantShowsRoute
+  '/applicant/shows': typeof ApplicantShowsRouteWithChildren
   '/applicant/': typeof ApplicantIndexRoute
+  '/applicant/shows/$id': typeof ApplicantShowsIdRouteWithChildren
+  '/applicant/shows/$id/apply': typeof ApplicantShowsIdApplyRoute
+  '/applicant/shows/$id/complete': typeof ApplicantShowsIdCompleteRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/applicant' | '/applicant/shows' | '/applicant/'
+  fullPaths:
+    | '/'
+    | '/applicant'
+    | '/applicant/shows'
+    | '/applicant/'
+    | '/applicant/shows/$id'
+    | '/applicant/shows/$id/apply'
+    | '/applicant/shows/$id/complete'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/applicant/shows' | '/applicant'
-  id: '__root__' | '/' | '/applicant' | '/applicant/shows' | '/applicant/'
+  to:
+    | '/'
+    | '/applicant/shows'
+    | '/applicant'
+    | '/applicant/shows/$id'
+    | '/applicant/shows/$id/apply'
+    | '/applicant/shows/$id/complete'
+  id:
+    | '__root__'
+    | '/'
+    | '/applicant'
+    | '/applicant/shows'
+    | '/applicant/'
+    | '/applicant/shows/$id'
+    | '/applicant/shows/$id/apply'
+    | '/applicant/shows/$id/complete'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -96,16 +145,62 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantShowsRouteImport
       parentRoute: typeof ApplicantRoute
     }
+    '/applicant/shows/$id': {
+      id: '/applicant/shows/$id'
+      path: '/$id'
+      fullPath: '/applicant/shows/$id'
+      preLoaderRoute: typeof ApplicantShowsIdRouteImport
+      parentRoute: typeof ApplicantShowsRoute
+    }
+    '/applicant/shows/$id/complete': {
+      id: '/applicant/shows/$id/complete'
+      path: '/complete'
+      fullPath: '/applicant/shows/$id/complete'
+      preLoaderRoute: typeof ApplicantShowsIdCompleteRouteImport
+      parentRoute: typeof ApplicantShowsIdRoute
+    }
+    '/applicant/shows/$id/apply': {
+      id: '/applicant/shows/$id/apply'
+      path: '/apply'
+      fullPath: '/applicant/shows/$id/apply'
+      preLoaderRoute: typeof ApplicantShowsIdApplyRouteImport
+      parentRoute: typeof ApplicantShowsIdRoute
+    }
   }
 }
 
+interface ApplicantShowsIdRouteChildren {
+  ApplicantShowsIdApplyRoute: typeof ApplicantShowsIdApplyRoute
+  ApplicantShowsIdCompleteRoute: typeof ApplicantShowsIdCompleteRoute
+}
+
+const ApplicantShowsIdRouteChildren: ApplicantShowsIdRouteChildren = {
+  ApplicantShowsIdApplyRoute: ApplicantShowsIdApplyRoute,
+  ApplicantShowsIdCompleteRoute: ApplicantShowsIdCompleteRoute,
+}
+
+const ApplicantShowsIdRouteWithChildren =
+  ApplicantShowsIdRoute._addFileChildren(ApplicantShowsIdRouteChildren)
+
+interface ApplicantShowsRouteChildren {
+  ApplicantShowsIdRoute: typeof ApplicantShowsIdRouteWithChildren
+}
+
+const ApplicantShowsRouteChildren: ApplicantShowsRouteChildren = {
+  ApplicantShowsIdRoute: ApplicantShowsIdRouteWithChildren,
+}
+
+const ApplicantShowsRouteWithChildren = ApplicantShowsRoute._addFileChildren(
+  ApplicantShowsRouteChildren,
+)
+
 interface ApplicantRouteChildren {
-  ApplicantShowsRoute: typeof ApplicantShowsRoute
+  ApplicantShowsRoute: typeof ApplicantShowsRouteWithChildren
   ApplicantIndexRoute: typeof ApplicantIndexRoute
 }
 
 const ApplicantRouteChildren: ApplicantRouteChildren = {
-  ApplicantShowsRoute: ApplicantShowsRoute,
+  ApplicantShowsRoute: ApplicantShowsRouteWithChildren,
   ApplicantIndexRoute: ApplicantIndexRoute,
 }
 
