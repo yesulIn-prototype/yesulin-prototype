@@ -14,7 +14,8 @@ const reviewMap: Record<ReviewStatus, string> = {
   "검토 중": "bg-secondary text-secondary-foreground",
   "오디션 대상": "bg-success/15 text-success",
   "보류": "bg-muted text-muted-foreground",
-  "탈락": "bg-destructive/10 text-destructive",
+  "합격": "bg-primary text-primary-foreground",
+  "불합격": "bg-destructive/10 text-destructive",
 };
 
 export function ApplyBadge({ status, className }: { status: ApplyStatus; className?: string }) {
