@@ -135,20 +135,50 @@ function ApplyWizard() {
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{show.title}</h1>
       </div>
 
-      <ol className="flex flex-wrap gap-1 rounded-full bg-secondary p-1">
-        {STEPS.map((s, i) => (
-          <li key={s} className="flex-1 min-w-[100px]">
-            <button
-              onClick={() => setStep(i)}
-              className={`w-full rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                i === step ? "bg-primary text-primary-foreground" : i < step ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {i + 1}. {s}
-            </button>
-          </li>
-        ))}
+      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {STEPS.map((s, i) => {
+          const status = stepStatus(i);
+          const isActive = i === step;
+          const missingCount = (stepMissing[i] ?? []).length;
+          return (
+            <li key={s}>
+              <button
+                onClick={() => goToStep(i)}
+                className={`relative w-full rounded-lg border p-2 text-left transition-colors ${
+                  isActive
+                    ? "border-primary bg-primary/5"
+                    : status === "누락"
+                      ? "border-destructive/40 bg-destructive/5"
+                      : status === "완료"
+                        ? "border-success/40 bg-success/5"
+                        : "border-border bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      status === "완료"
+                        ? "bg-success text-white"
+                        : status === "누락"
+                          ? "bg-destructive text-white"
+                          : isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {status === "완료" ? "✓" : status === "누락" ? "!" : i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{s}</span>
+                </div>
+                <div className={`mt-1 text-[10px] ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}>
+                  {status === "누락" ? `필수 ${missingCount}개 누락` : status}
+                </div>
+              </button>
+            </li>
+          );
+        })}
       </ol>
+
 
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
         {step === 0 && (
