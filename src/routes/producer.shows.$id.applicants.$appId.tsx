@@ -8,7 +8,7 @@ export const Route = createFileRoute("/producer/shows/$id/applicants/$appId")({
   component: ApplicantDetail,
 });
 
-const REVIEW_STATUSES: ReviewStatus[] = ["미확인", "검토 중", "오디션 대상", "보류", "탈락"];
+const REVIEW_STATUSES: ReviewStatus[] = ["미확인", "검토 중", "오디션 대상", "보류", "합격", "불합격"];
 
 function ApplicantDetail() {
   const { id, appId } = Route.useParams();
