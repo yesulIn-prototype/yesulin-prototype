@@ -43,6 +43,8 @@ function ApplyWizard() {
   const [videoMap, setVideoMap] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [motivation, setMotivation] = useState("");
+  const [visited, setVisited] = useState<Record<number, boolean>>({ 0: true });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; missing: string[] }>({ open: false, missing: [] });
 
   if (!show) throw notFound();
 
@@ -50,17 +52,34 @@ function ApplyWizard() {
   const videoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) => r.key.startsWith("video-"));
   const hasMotivation = show.requiredItems.some((r) => r.key === "motivation");
 
-  const missing = useMemo(() => {
-    const m: string[] = [];
-    if (roleIds.length === 0) m.push("지원 배역");
-    for (const req of show.requiredItems) {
-      if (req.key.startsWith("photo-") && !photoMap[req.key]) m.push(req.label);
-      if (req.key.startsWith("video-") && !videoMap[req.key]) m.push(req.label);
-      if (req.key === "motivation" && !motivation.trim()) m.push("지원 동기");
-      if (req.key === "career" && careerMode === "select" && careerIds.length === 0) m.push("경력 선택");
+  // Per-step missing (only the required items for that step)
+  const stepMissing = useMemo<Record<number, string[]>>(() => {
+    const m: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    if (roleIds.length === 0) m[0].push("지원 배역");
+    // step 1 profile: name/phone/email required
+    if (!profile.name.trim()) m[1].push("이름");
+    if (!profile.phone.trim()) m[1].push("연락처");
+    if (!profile.email.trim()) m[1].push("이메일");
+    // step 2 career
+    if (show.requiredItems.some((r) => r.key === "career") && careerMode === "select" && careerIds.length === 0) {
+      m[2].push("경력 선택");
     }
+    // step 3 photos
+    for (const req of show.requiredItems) {
+      if (req.key.startsWith("photo-") && !photoMap[req.key]) m[3].push(req.label);
+    }
+    // step 4 videos
+    for (const req of show.requiredItems) {
+      if (req.key.startsWith("video-") && !videoMap[req.key]) m[4].push(req.label);
+    }
+    // step 5 additional
+    if (hasMotivation && !motivation.trim()) m[5].push("지원 동기");
     return m;
-  }, [roleIds, photoMap, videoMap, motivation, careerIds, careerMode, show.requiredItems]);
+  }, [roleIds, profile, careerMode, careerIds, photoMap, videoMap, motivation, hasMotivation, show.requiredItems]);
+
+  const missing = useMemo(() => {
+    return Object.values(stepMissing).flat();
+  }, [stepMissing]);
 
   const selectedCareers = useMemo(
     () => (careerMode === "all" ? applicant.careers : applicant.careers.filter((c) => careerIds.includes(c.id))),
@@ -82,7 +101,28 @@ function ApplyWizard() {
     navigate({ to: "/applicant/shows/$id/complete", params: { id: show!.id } });
   }
 
-  const canNext = step === 0 ? roleIds.length > 0 : true;
+  function goToStep(next: number) {
+    setVisited((v) => ({ ...v, [next]: true }));
+    setStep(next);
+  }
+
+  function attemptNext() {
+    const currentMissing = stepMissing[step] ?? [];
+    if (currentMissing.length > 0) {
+      setConfirmDialog({ open: true, missing: currentMissing });
+      return;
+    }
+    goToStep(step + 1);
+  }
+
+  function stepStatus(i: number): "완료" | "누락" | "작성 중" | "작성 전" {
+    if ((stepMissing[i] ?? []).length > 0) {
+      // if user has ever visited it, mark as 누락, otherwise 작성 전
+      return visited[i] ? "누락" : "작성 전";
+    }
+    return "완료";
+  }
+
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
