@@ -454,7 +454,7 @@ function ApplyWizard() {
 
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          onClick={() => goToStep(Math.max(0, step - 1))}
           disabled={step === 0}
           className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium disabled:opacity-40"
         >
@@ -462,9 +462,8 @@ function ApplyWizard() {
         </button>
         {step < STEPS.length - 1 ? (
           <button
-            onClick={() => setStep((s) => s + 1)}
-            disabled={!canNext}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+            onClick={attemptNext}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
           >
             다음 <ChevronRight className="h-4 w-4" />
           </button>
@@ -472,15 +471,55 @@ function ApplyWizard() {
           <button
             onClick={submit}
             disabled={missing.length > 0}
+            title={missing.length > 0 ? "필수 항목을 모두 채워야 제출할 수 있습니다" : ""}
             className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
             지원서 제출 <Sparkles className="h-4 w-4" />
           </button>
         )}
       </div>
+
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <div className="flex-1">
+                <h3 className="text-base font-semibold">필수 항목이 작성되지 않았습니다.</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  현재 단계에 입력하지 않은 필수 항목이 있습니다. 그래도 다음 단계로 이동하시겠습니까?
+                </p>
+                <ul className="mt-3 list-disc space-y-0.5 pl-5 text-xs text-destructive">
+                  {confirmDialog.missing.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDialog({ open: false, missing: [] })}
+                className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                이 단계에서 작성하기
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmDialog({ open: false, missing: [] });
+                  goToStep(step + 1);
+                }}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                다음 단계로 이동
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function StepBlock({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
