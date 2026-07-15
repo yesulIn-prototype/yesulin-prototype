@@ -43,6 +43,8 @@ function ApplyWizard() {
   const [videoMap, setVideoMap] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [motivation, setMotivation] = useState("");
+  const [visited, setVisited] = useState<Record<number, boolean>>({ 0: true });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; missing: string[] }>({ open: false, missing: [] });
 
   if (!show) throw notFound();
 
@@ -50,17 +52,34 @@ function ApplyWizard() {
   const videoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) => r.key.startsWith("video-"));
   const hasMotivation = show.requiredItems.some((r) => r.key === "motivation");
 
-  const missing = useMemo(() => {
-    const m: string[] = [];
-    if (roleIds.length === 0) m.push("지원 배역");
-    for (const req of show.requiredItems) {
-      if (req.key.startsWith("photo-") && !photoMap[req.key]) m.push(req.label);
-      if (req.key.startsWith("video-") && !videoMap[req.key]) m.push(req.label);
-      if (req.key === "motivation" && !motivation.trim()) m.push("지원 동기");
-      if (req.key === "career" && careerMode === "select" && careerIds.length === 0) m.push("경력 선택");
+  // Per-step missing (only the required items for that step)
+  const stepMissing = useMemo<Record<number, string[]>>(() => {
+    const m: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    if (roleIds.length === 0) m[0].push("지원 배역");
+    // step 1 profile: name/phone/email required
+    if (!profile.name.trim()) m[1].push("이름");
+    if (!profile.phone.trim()) m[1].push("연락처");
+    if (!profile.email.trim()) m[1].push("이메일");
+    // step 2 career
+    if (show.requiredItems.some((r) => r.key === "career") && careerMode === "select" && careerIds.length === 0) {
+      m[2].push("경력 선택");
     }
+    // step 3 photos
+    for (const req of show.requiredItems) {
+      if (req.key.startsWith("photo-") && !photoMap[req.key]) m[3].push(req.label);
+    }
+    // step 4 videos
+    for (const req of show.requiredItems) {
+      if (req.key.startsWith("video-") && !videoMap[req.key]) m[4].push(req.label);
+    }
+    // step 5 additional
+    if (hasMotivation && !motivation.trim()) m[5].push("지원 동기");
     return m;
-  }, [roleIds, photoMap, videoMap, motivation, careerIds, careerMode, show.requiredItems]);
+  }, [roleIds, profile, careerMode, careerIds, photoMap, videoMap, motivation, hasMotivation, show.requiredItems]);
+
+  const missing = useMemo(() => {
+    return Object.values(stepMissing).flat();
+  }, [stepMissing]);
 
   const selectedCareers = useMemo(
     () => (careerMode === "all" ? applicant.careers : applicant.careers.filter((c) => careerIds.includes(c.id))),
@@ -82,7 +101,28 @@ function ApplyWizard() {
     navigate({ to: "/applicant/shows/$id/complete", params: { id: show!.id } });
   }
 
-  const canNext = step === 0 ? roleIds.length > 0 : true;
+  function goToStep(next: number) {
+    setVisited((v) => ({ ...v, [next]: true }));
+    setStep(next);
+  }
+
+  function attemptNext() {
+    const currentMissing = stepMissing[step] ?? [];
+    if (currentMissing.length > 0) {
+      setConfirmDialog({ open: true, missing: currentMissing });
+      return;
+    }
+    goToStep(step + 1);
+  }
+
+  function stepStatus(i: number): "완료" | "누락" | "작성 중" | "작성 전" {
+    if ((stepMissing[i] ?? []).length > 0) {
+      // if user has ever visited it, mark as 누락, otherwise 작성 전
+      return visited[i] ? "누락" : "작성 전";
+    }
+    return "완료";
+  }
+
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -95,20 +135,50 @@ function ApplyWizard() {
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{show.title}</h1>
       </div>
 
-      <ol className="flex flex-wrap gap-1 rounded-full bg-secondary p-1">
-        {STEPS.map((s, i) => (
-          <li key={s} className="flex-1 min-w-[100px]">
-            <button
-              onClick={() => setStep(i)}
-              className={`w-full rounded-full px-3 py-1.5 text-[11px] font-medium transition-colors ${
-                i === step ? "bg-primary text-primary-foreground" : i < step ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {i + 1}. {s}
-            </button>
-          </li>
-        ))}
+      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {STEPS.map((s, i) => {
+          const status = stepStatus(i);
+          const isActive = i === step;
+          const missingCount = (stepMissing[i] ?? []).length;
+          return (
+            <li key={s}>
+              <button
+                onClick={() => goToStep(i)}
+                className={`relative w-full rounded-lg border p-2 text-left transition-colors ${
+                  isActive
+                    ? "border-primary bg-primary/5"
+                    : status === "누락"
+                      ? "border-destructive/40 bg-destructive/5"
+                      : status === "완료"
+                        ? "border-success/40 bg-success/5"
+                        : "border-border bg-card"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                      status === "완료"
+                        ? "bg-success text-white"
+                        : status === "누락"
+                          ? "bg-destructive text-white"
+                          : isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                    }`}
+                  >
+                    {status === "완료" ? "✓" : status === "누락" ? "!" : i + 1}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{s}</span>
+                </div>
+                <div className={`mt-1 text-[10px] ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}>
+                  {status === "누락" ? `필수 ${missingCount}개 누락` : status}
+                </div>
+              </button>
+            </li>
+          );
+        })}
       </ol>
+
 
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
         {step === 0 && (
@@ -384,7 +454,7 @@ function ApplyWizard() {
 
       <div className="flex items-center justify-between">
         <button
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          onClick={() => goToStep(Math.max(0, step - 1))}
           disabled={step === 0}
           className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium disabled:opacity-40"
         >
@@ -392,9 +462,8 @@ function ApplyWizard() {
         </button>
         {step < STEPS.length - 1 ? (
           <button
-            onClick={() => setStep((s) => s + 1)}
-            disabled={!canNext}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
+            onClick={attemptNext}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
           >
             다음 <ChevronRight className="h-4 w-4" />
           </button>
@@ -402,15 +471,55 @@ function ApplyWizard() {
           <button
             onClick={submit}
             disabled={missing.length > 0}
+            title={missing.length > 0 ? "필수 항목을 모두 채워야 제출할 수 있습니다" : ""}
             className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
             지원서 제출 <Sparkles className="h-4 w-4" />
           </button>
         )}
       </div>
+
+      {confirmDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <div className="flex-1">
+                <h3 className="text-base font-semibold">필수 항목이 작성되지 않았습니다.</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  현재 단계에 입력하지 않은 필수 항목이 있습니다. 그래도 다음 단계로 이동하시겠습니까?
+                </p>
+                <ul className="mt-3 list-disc space-y-0.5 pl-5 text-xs text-destructive">
+                  {confirmDialog.missing.map((m) => (
+                    <li key={m}>{m}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setConfirmDialog({ open: false, missing: [] })}
+                className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary"
+              >
+                이 단계에서 작성하기
+              </button>
+              <button
+                onClick={() => {
+                  setConfirmDialog({ open: false, missing: [] });
+                  goToStep(step + 1);
+                }}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+              >
+                다음 단계로 이동
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function StepBlock({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (

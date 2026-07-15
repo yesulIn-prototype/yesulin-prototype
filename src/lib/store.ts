@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ReviewStatus = "미확인" | "검토 중" | "오디션 대상" | "보류" | "탈락";
+export type ReviewStatus = "미확인" | "검토 중" | "오디션 대상" | "보류" | "합격" | "불합격";
 export type ApplyStatus = "작성 중" | "지원 완료" | "서류 확인" | "오디션 예정" | "결과 발표";
 export type ScheduleKind = "지원 마감" | "오디션" | "연습" | "공연";
 
