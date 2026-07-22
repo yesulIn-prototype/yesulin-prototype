@@ -34,20 +34,28 @@ function ShowsList() {
   }, [shows, q, kind, openOnly, sortBy]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">공연 찾기</h1>
-        <p className="mt-1 text-sm text-muted-foreground">지원 가능한 공연을 확인하고 저장된 자료로 바로 지원하세요.</p>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Discover
+          </div>
+          <h1 className="mt-1 font-display text-3xl tracking-tight md:text-4xl">공연 찾기</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            지원 가능한 공연을 확인하고 저장된 자료로 바로 지원하세요.
+          </p>
+        </div>
+        <div className="text-xs text-muted-foreground">총 <strong className="text-foreground">{filtered.length}</strong>개 공연</div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
-        <div className="relative flex-1 min-w-[200px]">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
+        <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="공연명 또는 제작사 검색"
-            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-primary"
+            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
           />
         </div>
         <select
@@ -78,7 +86,7 @@ function ShowsList() {
         </select>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((show) => {
           const applied = appliedIds.has(show.id);
           return (
@@ -86,50 +94,61 @@ function ShowsList() {
               key={show.id}
               to="/applicant/shows/$id"
               params={{ id: show.id }}
-              className="group flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-elev-1)] transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-elev-3)]"
             >
-              <Poster title={show.title} color={show.posterColor} className="h-40" />
-              <div className="flex flex-1 flex-col p-4">
-                <div className="flex items-center gap-2">
-                  <span className="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground">
-                    {show.kind}
-                  </span>
+              <div className="relative">
+                <Poster title={show.title} color={show.posterColor} kind={show.kind} className="aspect-[5/6]" />
+                <div className="absolute left-3 top-3 flex items-center gap-1.5">
                   {show.status === "모집 중" ? (
                     <DeadlineBadge daysLeft={daysUntil(show.deadline)} />
                   ) : (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                    <span className="rounded-full border border-white/30 bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
                       {show.status}
                     </span>
                   )}
                   {applied && (
-                    <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-medium text-success">
+                    <span className="rounded-full border border-success/40 bg-success/90 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
                       지원 완료
                     </span>
                   )}
                 </div>
-                <div className="mt-2 text-base font-semibold leading-tight">{show.title}</div>
-                <div className="text-xs text-muted-foreground">{show.producer}</div>
-                <div className="mt-3 space-y-1 text-xs text-muted-foreground">
-                  <div>모집 배역: {show.roles.map((r) => r.name).join(", ")}</div>
-                  <div>지원 마감: {show.deadline}</div>
-                  <div>오디션: {show.auditionDate}</div>
-                  <div>공연: {show.showPeriod}</div>
+              </div>
+              <div className="flex flex-1 flex-col p-5">
+                <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                  {show.kind}
                 </div>
-                <div className="mt-auto pt-4">
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-primary group-hover:underline">
-                    상세 보기 →
-                  </span>
+                <div className="mt-1 font-display text-xl leading-tight text-foreground">{show.title}</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{show.producer}</div>
+                <dl className="mt-4 space-y-1.5 border-t border-border/70 pt-3 text-xs">
+                  <MetaLine label="모집 배역" value={show.roles.map((r) => r.name).join(", ")} />
+                  <MetaLine label="지원 마감" value={show.deadline} />
+                  <MetaLine label="오디션" value={show.auditionDate} />
+                  <MetaLine label="공연" value={show.showPeriod} />
+                </dl>
+                <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
+                  상세 보기 →
                 </div>
               </div>
             </Link>
           );
         })}
         {filtered.length === 0 && (
-          <div className="col-span-full rounded-xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
+          <div className="col-span-full rounded-2xl border border-dashed border-border bg-card p-16 text-center text-sm text-muted-foreground">
             조건에 맞는 공연이 없습니다.
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MetaLine({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <dt className="w-14 shrink-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="min-w-0 flex-1 truncate text-foreground/85">{value}</dd>
     </div>
   );
 }

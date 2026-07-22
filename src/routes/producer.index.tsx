@@ -18,10 +18,23 @@ function ProducerHome() {
   const auditionCount = applications.filter((a) => a.reviewStatus === "오디션 대상").length;
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">공연사 대시보드</h1>
-        <p className="mt-1 text-sm text-muted-foreground">공연별 지원자를 동일한 구조에서 확인할 수 있습니다.</p>
+    <div className="space-y-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
+            Producer Console
+          </div>
+          <h1 className="mt-1 font-display text-3xl tracking-tight md:text-4xl">대시보드</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            공연별 지원자를 동일한 구조에서 확인할 수 있습니다.
+          </p>
+        </div>
+        <Link
+          to="/producer/create"
+          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-elev-1)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-elev-2)]"
+        >
+          + 새 공고 만들기
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -129,12 +142,12 @@ function Stat({
       : accent === "warning" ? "bg-warning/15 text-warning-foreground"
         : "bg-primary/10 text-primary";
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className={`inline-flex h-8 w-8 items-center justify-center rounded-md ${color}`}>
+    <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
+      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="mt-3 text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-lg font-semibold">{value}</div>
+      <div className="mt-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-1 font-display text-2xl tabular-nums">{value}</div>
     </div>
   );
 }
