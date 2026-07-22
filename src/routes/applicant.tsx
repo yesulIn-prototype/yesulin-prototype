@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Home, Search, FileStack, User, FolderOpen, Sparkles, ChevronLeft } from "lucide-react";
+import { Home, Search, FileStack, User, FolderOpen, ChevronLeft } from "lucide-react";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/applicant")({
@@ -20,30 +20,28 @@ function ApplicantLayout() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/90 backdrop-blur">
+      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
+              <BrandMark />
+              <div className="flex flex-col leading-none">
+                <span className="text-sm font-semibold tracking-tight">공연 지원 플랫폼</span>
+                <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">Applicant</span>
               </div>
-              <span className="text-sm font-semibold">공연 지원 플랫폼</span>
             </Link>
-            <span className="hidden rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium text-secondary-foreground md:inline-flex">
-              지원자
-            </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden text-right text-xs sm:block">
-              <div className="font-medium">{applicant.name}</div>
+              <div className="font-medium leading-tight">{applicant.name}</div>
               <div className="text-muted-foreground">{applicant.stageName}</div>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-1 ring-primary/15">
               {applicant.name.charAt(0)}
             </div>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:px-6">
+        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:px-6" aria-label="주요 메뉴">
           {nav.map((item) => {
             const active = item.exact
               ? location.pathname === item.to
@@ -53,9 +51,10 @@ function ApplicantLayout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-sm transition-colors ${
+                aria-current={active ? "page" : undefined}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
                   active
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-elev-1)]"
                     : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
                 }`}
               >
@@ -67,9 +66,20 @@ function ApplicantLayout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
         <Outlet />
       </main>
+    </div>
+  );
+}
+
+function BrandMark() {
+  return (
+    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(58,26,44,0.22)]">
+      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
+        <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
+      </svg>
     </div>
   );
 }
