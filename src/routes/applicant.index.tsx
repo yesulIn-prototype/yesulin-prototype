@@ -89,25 +89,39 @@ function ApplicantHome() {
   const recent = applications.slice(0, 3);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       {/* Hero: greeting + main CTA + status counts */}
-      <section className="rounded-2xl border border-border bg-gradient-to-br from-primary via-primary to-[#3a1a2c] p-6 text-primary-foreground md:p-10">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary text-primary-foreground shadow-[var(--shadow-elev-2)]">
+        <div className="stage-spotlight absolute inset-0" aria-hidden />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.08]"
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(90deg, rgba(255,255,255,0.6) 0 1px, transparent 1px 96px)",
+          }}
+        />
+        <div className="relative grid gap-8 p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end md:p-10">
           <div className="min-w-0">
-            <div className="text-xs uppercase tracking-widest opacity-70">지원자 홈</div>
-            <h1 className="mt-2 text-2xl font-semibold md:text-4xl">안녕하세요, {applicant.name} 님</h1>
-            <p className="mt-2 max-w-lg text-sm opacity-80">
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] opacity-70">
+              <span className="inline-block h-px w-6 bg-gold/70" />
+              Applicant Home
+            </div>
+            <h1 className="mt-3 font-display text-3xl leading-[1.1] md:text-5xl">
+              안녕하세요, <span className="text-gold">{applicant.name}</span> 님
+            </h1>
+            <p className="mt-3 max-w-lg text-sm leading-relaxed opacity-80 md:text-base">
               오늘도 잘 맞는 공연을 찾아 지원해 보세요. 한 번 등록한 자료는 계속 재사용할 수 있습니다.
             </p>
             <Link
               to="/applicant/shows"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3 text-base font-semibold text-gold-foreground shadow-lg transition hover:opacity-90"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground shadow-[0_10px_30px_-8px_rgba(180,120,40,0.55)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-10px_rgba(180,120,40,0.65)]"
             >
-              <Search className="h-5 w-5" /> 새로운 공연 찾기
+              <Search className="h-4 w-4" /> 새로운 공연 찾기
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-2 lg:w-[360px]">
+          <div className="grid grid-cols-3 gap-2 lg:w-[380px]">
             <MiniStat label="검토 중" value={reviewing} />
             <MiniStat label="오디션 예정" value={audition} />
             <MiniStat label="결과 발표" value={results} />
@@ -327,9 +341,12 @@ function ApplicantHome() {
 
 function MiniStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-white/10 p-3 backdrop-blur">
-      <div className="text-[10px] uppercase tracking-widest opacity-70">{label}</div>
-      <div className="mt-1 text-2xl font-semibold">{value}<span className="ml-1 text-xs opacity-80">건</span></div>
+    <div className="rounded-xl border border-white/12 bg-white/8 p-3.5 backdrop-blur-sm">
+      <div className="text-[10px] font-medium uppercase tracking-widest opacity-70">{label}</div>
+      <div className="mt-1.5 flex items-baseline gap-1">
+        <span className="font-display text-3xl leading-none tabular-nums">{value}</span>
+        <span className="text-xs opacity-80">건</span>
+      </div>
     </div>
   );
 }
