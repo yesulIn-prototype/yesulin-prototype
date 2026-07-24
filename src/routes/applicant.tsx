@@ -27,7 +27,9 @@ function ApplicantLayout() {
               <BrandMark />
               <div className="flex flex-col leading-none">
                 <span className="text-sm font-semibold tracking-tight">공연 지원 플랫폼</span>
-                <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">Applicant</span>
+                <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Applicant
+                </span>
               </div>
             </Link>
           </div>
@@ -41,7 +43,10 @@ function ApplicantLayout() {
             </div>
           </div>
         </div>
-        <nav className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:px-6" aria-label="주요 메뉴">
+        <nav
+          className="mx-auto hidden max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:flex md:px-6"
+          aria-label="주요 메뉴"
+        >
           {nav.map((item) => {
             const active = item.exact
               ? location.pathname === item.to
@@ -66,9 +71,34 @@ function ApplicantLayout() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
+      <main className="mx-auto max-w-7xl px-4 py-6 pb-28 md:px-6 md:py-10">
         <Outlet />
       </main>
+
+      <nav
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(35,20,30,0.08)] backdrop-blur md:hidden"
+        aria-label="모바일 주요 메뉴"
+      >
+        {nav.map((item) => {
+          const active = item.exact
+            ? location.pathname === item.to
+            : location.pathname.startsWith(item.to);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.to}
+              to={item.to}
+              aria-current={active ? "page" : undefined}
+              className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium ${
+                active ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Icon className={`h-4 w-4 ${active ? "stroke-[2.4]" : ""}`} />
+              <span className="truncate">{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }
@@ -76,7 +106,14 @@ function ApplicantLayout() {
 function BrandMark() {
   return (
     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(58,26,44,0.22)]">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
         <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
         <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
       </svg>

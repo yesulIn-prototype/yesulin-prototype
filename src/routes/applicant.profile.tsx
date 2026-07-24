@@ -23,7 +23,8 @@ function ProfilePage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">내 프로필</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            여기에 등록한 정보는 공연 지원서에서 <strong className="text-foreground">그대로 재사용</strong>됩니다.
+            여기에 등록한 정보는 공연 지원서에서{" "}
+            <strong className="text-foreground">그대로 재사용</strong>됩니다.
           </p>
         </div>
         <button
@@ -41,8 +42,14 @@ function ProfilePage() {
         <div className="grid gap-4 md:grid-cols-2">
           {(
             [
-              ["name", "이름"], ["stageName", "활동명"], ["phone", "연락처"], ["email", "이메일"],
-              ["birthDate", "생년월일"], ["gender", "성별"], ["height", "키"], ["bio", "프로필 한 줄 소개"],
+              ["name", "이름"],
+              ["stageName", "활동명"],
+              ["phone", "연락처"],
+              ["email", "이메일"],
+              ["birthDate", "생년월일"],
+              ["gender", "성별"],
+              ["height", "키"],
+              ["bio", "프로필 한 줄 소개"],
             ] as const
           ).map(([key, label]) => (
             <div key={key}>
@@ -54,7 +61,9 @@ function ProfilePage() {
                   className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               ) : (
-                <div className="mt-1 text-sm font-medium">{(applicant as unknown as Record<string, string>)[key]}</div>
+                <div className="mt-1 text-sm font-medium">
+                  {(applicant as unknown as Record<string, string>)[key]}
+                </div>
               )}
             </div>
           ))}
@@ -86,7 +95,9 @@ function ProfilePage() {
             <div key={c.id} className="rounded-lg border border-border p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="font-medium">{c.title}</div>
-                <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{c.kind}</span>
+                <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
+                  {c.kind}
+                </span>
                 <span className="text-xs text-muted-foreground">· {c.role}</span>
               </div>
               <div className="mt-1 text-xs text-muted-foreground">
@@ -101,7 +112,8 @@ function ProfilePage() {
       <Section title="자기소개">
         <div className="flex items-start gap-2 rounded-lg border border-gold/30 bg-gold/10 p-3 text-xs text-gold-foreground">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          기본 자기소개를 저장해두면 각 공연 지원 시 <strong>이 내용을 불러온 뒤 해당 공연에 맞게 수정</strong>할 수 있습니다.
+          기본 자기소개를 저장해두면 각 공연 지원 시{" "}
+          <strong>이 내용을 불러온 뒤 해당 공연에 맞게 수정</strong>할 수 있습니다.
         </div>
         <textarea
           rows={5}
@@ -114,7 +126,10 @@ function ProfilePage() {
       <Section
         title="사진 보관함"
         action={
-          <button onClick={addPhoto} className="inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-accent">
+          <button
+            onClick={addPhoto}
+            className="inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-accent"
+          >
             <Plus className="h-3 w-3" /> 사진 추가
           </button>
         }
@@ -139,7 +154,10 @@ function ProfilePage() {
       <Section
         title="영상 보관함"
         action={
-          <button onClick={addVideo} className="inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-accent">
+          <button
+            onClick={addVideo}
+            className="inline-flex items-center gap-1 rounded-md bg-secondary px-3 py-1.5 text-xs font-medium hover:bg-accent"
+          >
             <Plus className="h-3 w-3" /> 영상 추가
           </button>
         }
@@ -150,7 +168,9 @@ function ProfilePage() {
               <VideoTile color={v.color} duration={v.duration} />
               <div className="p-3">
                 <div className="truncate text-sm font-medium">{v.title}</div>
-                <div className="text-xs text-muted-foreground">{v.type} · {v.duration}</div>
+                <div className="text-xs text-muted-foreground">
+                  {v.type} · {v.duration}
+                </div>
                 <div className="text-[10px] text-muted-foreground">{v.createdAt}</div>
               </div>
             </div>
@@ -161,12 +181,19 @@ function ProfilePage() {
       <Section title="문서 보관함">
         <div className="space-y-2">
           {applicant.docs.map((d) => (
-            <div key={d.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div
+              key={d.id}
+              className="flex items-center justify-between rounded-lg border border-border p-3"
+            >
               <div>
                 <div className="text-sm font-medium">{d.fileName}</div>
-                <div className="text-xs text-muted-foreground">{d.type} · {d.createdAt}</div>
+                <div className="text-xs text-muted-foreground">
+                  {d.type} · {d.createdAt}
+                </div>
               </div>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">{d.type}</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">
+                {d.type}
+              </span>
             </div>
           ))}
           {applicant.docs.length === 0 && (
@@ -180,7 +207,15 @@ function ProfilePage() {
   );
 }
 
-function Section({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-5 md:p-6">
       <div className="flex items-center justify-between">

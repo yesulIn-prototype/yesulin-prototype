@@ -9,27 +9,27 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ProducerRouteImport } from './routes/producer'
-import { Route as ApplicantRouteImport } from './routes/applicant'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ProducerIndexRouteImport } from './routes/producer.index'
+import { Route as ApplicantRouteImport } from './routes/applicant'
+import { Route as ProducerRouteImport } from './routes/producer'
 import { Route as ApplicantIndexRouteImport } from './routes/applicant.index'
-import { Route as ProducerCreateRouteImport } from './routes/producer.create'
-import { Route as ProducerApplicantsRouteImport } from './routes/producer.applicants'
-import { Route as ApplicantProfileRouteImport } from './routes/applicant.profile'
-import { Route as ApplicantFilesRouteImport } from './routes/applicant.files'
 import { Route as ApplicantApplicationsRouteImport } from './routes/applicant.applications'
-import { Route as ProducerShowsIndexRouteImport } from './routes/producer.shows.index'
+import { Route as ApplicantFilesRouteImport } from './routes/applicant.files'
+import { Route as ApplicantProfileRouteImport } from './routes/applicant.profile'
+import { Route as ProducerIndexRouteImport } from './routes/producer.index'
+import { Route as ProducerApplicantsRouteImport } from './routes/producer.applicants'
+import { Route as ProducerCreateRouteImport } from './routes/producer.create'
 import { Route as ApplicantShowsIndexRouteImport } from './routes/applicant.shows.index'
-import { Route as ProducerShowsIdIndexRouteImport } from './routes/producer.shows.$id.index'
+import { Route as ProducerShowsIndexRouteImport } from './routes/producer.shows.index'
 import { Route as ApplicantShowsIdIndexRouteImport } from './routes/applicant.shows.$id.index'
-import { Route as ApplicantShowsIdCompleteRouteImport } from './routes/applicant.shows.$id.complete'
 import { Route as ApplicantShowsIdApplyRouteImport } from './routes/applicant.shows.$id.apply'
+import { Route as ApplicantShowsIdCompleteRouteImport } from './routes/applicant.shows.$id.complete'
+import { Route as ProducerShowsIdIndexRouteImport } from './routes/producer.shows.$id.index'
 import { Route as ProducerShowsIdApplicantsAppIdRouteImport } from './routes/producer.shows.$id.applicants.$appId'
 
-const ProducerRoute = ProducerRouteImport.update({
-  id: '/producer',
-  path: '/producer',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApplicantRoute = ApplicantRouteImport.update({
@@ -37,39 +37,14 @@ const ApplicantRoute = ApplicantRouteImport.update({
   path: '/applicant',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ProducerRoute = ProducerRouteImport.update({
+  id: '/producer',
+  path: '/producer',
   getParentRoute: () => rootRouteImport,
-} as any)
-const ProducerIndexRoute = ProducerIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ProducerRoute,
 } as any)
 const ApplicantIndexRoute = ApplicantIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => ApplicantRoute,
-} as any)
-const ProducerCreateRoute = ProducerCreateRouteImport.update({
-  id: '/create',
-  path: '/create',
-  getParentRoute: () => ProducerRoute,
-} as any)
-const ProducerApplicantsRoute = ProducerApplicantsRouteImport.update({
-  id: '/applicants',
-  path: '/applicants',
-  getParentRoute: () => ProducerRoute,
-} as any)
-const ApplicantProfileRoute = ApplicantProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => ApplicantRoute,
-} as any)
-const ApplicantFilesRoute = ApplicantFilesRouteImport.update({
-  id: '/files',
-  path: '/files',
   getParentRoute: () => ApplicantRoute,
 } as any)
 const ApplicantApplicationsRoute = ApplicantApplicationsRouteImport.update({
@@ -77,9 +52,29 @@ const ApplicantApplicationsRoute = ApplicantApplicationsRouteImport.update({
   path: '/applications',
   getParentRoute: () => ApplicantRoute,
 } as any)
-const ProducerShowsIndexRoute = ProducerShowsIndexRouteImport.update({
-  id: '/shows/',
-  path: '/shows/',
+const ApplicantFilesRoute = ApplicantFilesRouteImport.update({
+  id: '/files',
+  path: '/files',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ApplicantProfileRoute = ApplicantProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ProducerIndexRoute = ProducerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProducerRoute,
+} as any)
+const ProducerApplicantsRoute = ProducerApplicantsRouteImport.update({
+  id: '/applicants',
+  path: '/applicants',
+  getParentRoute: () => ProducerRoute,
+} as any)
+const ProducerCreateRoute = ProducerCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
   getParentRoute: () => ProducerRoute,
 } as any)
 const ApplicantShowsIndexRoute = ApplicantShowsIndexRouteImport.update({
@@ -87,14 +82,19 @@ const ApplicantShowsIndexRoute = ApplicantShowsIndexRouteImport.update({
   path: '/shows/',
   getParentRoute: () => ApplicantRoute,
 } as any)
-const ProducerShowsIdIndexRoute = ProducerShowsIdIndexRouteImport.update({
-  id: '/shows/$id/',
-  path: '/shows/$id/',
+const ProducerShowsIndexRoute = ProducerShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
   getParentRoute: () => ProducerRoute,
 } as any)
 const ApplicantShowsIdIndexRoute = ApplicantShowsIdIndexRouteImport.update({
   id: '/shows/$id/',
   path: '/shows/$id/',
+  getParentRoute: () => ApplicantRoute,
+} as any)
+const ApplicantShowsIdApplyRoute = ApplicantShowsIdApplyRouteImport.update({
+  id: '/shows/$id/apply',
+  path: '/shows/$id/apply',
   getParentRoute: () => ApplicantRoute,
 } as any)
 const ApplicantShowsIdCompleteRoute =
@@ -103,10 +103,10 @@ const ApplicantShowsIdCompleteRoute =
     path: '/shows/$id/complete',
     getParentRoute: () => ApplicantRoute,
   } as any)
-const ApplicantShowsIdApplyRoute = ApplicantShowsIdApplyRouteImport.update({
-  id: '/shows/$id/apply',
-  path: '/shows/$id/apply',
-  getParentRoute: () => ApplicantRoute,
+const ProducerShowsIdIndexRoute = ProducerShowsIdIndexRouteImport.update({
+  id: '/shows/$id/',
+  path: '/shows/$id/',
+  getParentRoute: () => ProducerRoute,
 } as any)
 const ProducerShowsIdApplicantsAppIdRoute =
   ProducerShowsIdApplicantsAppIdRouteImport.update({
@@ -237,11 +237,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/producer': {
-      id: '/producer'
-      path: '/producer'
-      fullPath: '/producer'
-      preLoaderRoute: typeof ProducerRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/applicant': {
@@ -251,53 +251,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/producer': {
+      id: '/producer'
+      path: '/producer'
+      fullPath: '/producer'
+      preLoaderRoute: typeof ProducerRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/producer/': {
-      id: '/producer/'
-      path: '/'
-      fullPath: '/producer/'
-      preLoaderRoute: typeof ProducerIndexRouteImport
-      parentRoute: typeof ProducerRoute
     }
     '/applicant/': {
       id: '/applicant/'
       path: '/'
       fullPath: '/applicant/'
       preLoaderRoute: typeof ApplicantIndexRouteImport
-      parentRoute: typeof ApplicantRoute
-    }
-    '/producer/create': {
-      id: '/producer/create'
-      path: '/create'
-      fullPath: '/producer/create'
-      preLoaderRoute: typeof ProducerCreateRouteImport
-      parentRoute: typeof ProducerRoute
-    }
-    '/producer/applicants': {
-      id: '/producer/applicants'
-      path: '/applicants'
-      fullPath: '/producer/applicants'
-      preLoaderRoute: typeof ProducerApplicantsRouteImport
-      parentRoute: typeof ProducerRoute
-    }
-    '/applicant/profile': {
-      id: '/applicant/profile'
-      path: '/profile'
-      fullPath: '/applicant/profile'
-      preLoaderRoute: typeof ApplicantProfileRouteImport
-      parentRoute: typeof ApplicantRoute
-    }
-    '/applicant/files': {
-      id: '/applicant/files'
-      path: '/files'
-      fullPath: '/applicant/files'
-      preLoaderRoute: typeof ApplicantFilesRouteImport
       parentRoute: typeof ApplicantRoute
     }
     '/applicant/applications': {
@@ -307,11 +272,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantApplicationsRouteImport
       parentRoute: typeof ApplicantRoute
     }
-    '/producer/shows/': {
-      id: '/producer/shows/'
-      path: '/shows'
-      fullPath: '/producer/shows/'
-      preLoaderRoute: typeof ProducerShowsIndexRouteImport
+    '/applicant/files': {
+      id: '/applicant/files'
+      path: '/files'
+      fullPath: '/applicant/files'
+      preLoaderRoute: typeof ApplicantFilesRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/applicant/profile': {
+      id: '/applicant/profile'
+      path: '/profile'
+      fullPath: '/applicant/profile'
+      preLoaderRoute: typeof ApplicantProfileRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
+    '/producer/': {
+      id: '/producer/'
+      path: '/'
+      fullPath: '/producer/'
+      preLoaderRoute: typeof ProducerIndexRouteImport
+      parentRoute: typeof ProducerRoute
+    }
+    '/producer/applicants': {
+      id: '/producer/applicants'
+      path: '/applicants'
+      fullPath: '/producer/applicants'
+      preLoaderRoute: typeof ProducerApplicantsRouteImport
+      parentRoute: typeof ProducerRoute
+    }
+    '/producer/create': {
+      id: '/producer/create'
+      path: '/create'
+      fullPath: '/producer/create'
+      preLoaderRoute: typeof ProducerCreateRouteImport
       parentRoute: typeof ProducerRoute
     }
     '/applicant/shows/': {
@@ -321,11 +314,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantShowsIndexRouteImport
       parentRoute: typeof ApplicantRoute
     }
-    '/producer/shows/$id/': {
-      id: '/producer/shows/$id/'
-      path: '/shows/$id'
-      fullPath: '/producer/shows/$id/'
-      preLoaderRoute: typeof ProducerShowsIdIndexRouteImport
+    '/producer/shows/': {
+      id: '/producer/shows/'
+      path: '/shows'
+      fullPath: '/producer/shows/'
+      preLoaderRoute: typeof ProducerShowsIndexRouteImport
       parentRoute: typeof ProducerRoute
     }
     '/applicant/shows/$id/': {
@@ -335,6 +328,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantShowsIdIndexRouteImport
       parentRoute: typeof ApplicantRoute
     }
+    '/applicant/shows/$id/apply': {
+      id: '/applicant/shows/$id/apply'
+      path: '/shows/$id/apply'
+      fullPath: '/applicant/shows/$id/apply'
+      preLoaderRoute: typeof ApplicantShowsIdApplyRouteImport
+      parentRoute: typeof ApplicantRoute
+    }
     '/applicant/shows/$id/complete': {
       id: '/applicant/shows/$id/complete'
       path: '/shows/$id/complete'
@@ -342,12 +342,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicantShowsIdCompleteRouteImport
       parentRoute: typeof ApplicantRoute
     }
-    '/applicant/shows/$id/apply': {
-      id: '/applicant/shows/$id/apply'
-      path: '/shows/$id/apply'
-      fullPath: '/applicant/shows/$id/apply'
-      preLoaderRoute: typeof ApplicantShowsIdApplyRouteImport
-      parentRoute: typeof ApplicantRoute
+    '/producer/shows/$id/': {
+      id: '/producer/shows/$id/'
+      path: '/shows/$id'
+      fullPath: '/producer/shows/$id/'
+      preLoaderRoute: typeof ProducerShowsIdIndexRouteImport
+      parentRoute: typeof ProducerRoute
     }
     '/producer/shows/$id/applicants/$appId': {
       id: '/producer/shows/$id/applicants/$appId'
@@ -415,3 +415,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

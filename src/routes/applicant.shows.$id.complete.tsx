@@ -16,9 +16,13 @@ function ApplyComplete() {
 
   if (!show) throw notFound();
 
-  const roles = app ? app.roleIds.map((r) => findRole(show, r)?.name).filter(Boolean).join(", ") : "";
-  const fileCount =
-    (app?.selectedPhotoIds.length ?? 0) + (app?.selectedVideoIds.length ?? 0);
+  const roles = app
+    ? app.roleIds
+        .map((r) => findRole(show, r)?.name)
+        .filter(Boolean)
+        .join(", ")
+    : "";
+  const fileCount = (app?.selectedPhotoIds.length ?? 0) + (app?.selectedVideoIds.length ?? 0);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -27,7 +31,9 @@ function ApplyComplete() {
           <CheckCircle2 className="h-7 w-7" />
         </div>
         <h1 className="mt-4 text-2xl font-semibold">지원서가 제출되었습니다.</h1>
-        <p className="mt-2 text-sm text-muted-foreground">저장된 프로필과 자료를 재사용해 제출을 완료했습니다.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          저장된 프로필과 자료를 재사용해 제출을 완료했습니다.
+        </p>
 
         <dl className="mt-8 divide-y divide-border rounded-xl border border-border bg-background text-left text-sm">
           <Row label="공연명" value={show.title} />

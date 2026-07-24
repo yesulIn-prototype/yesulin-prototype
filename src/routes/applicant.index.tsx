@@ -2,7 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useStore, daysUntil, findShow, findRole } from "@/lib/store";
 import { ApplyBadge } from "@/components/status-badge";
-import { Search, ArrowRight, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Search,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
 export const Route = createFileRoute("/applicant/")({
   component: ApplicantHome,
@@ -34,8 +40,12 @@ function ApplicantHome() {
   const applications = allApps.filter((a) => a.applicantId === "me");
   const shows = useStore((s) => s.shows);
 
-  const reviewing = applications.filter((a) => a.reviewStatus === "검토 중" || a.reviewStatus === "미확인").length;
-  const audition = applications.filter((a) => a.applyStatus === "오디션 예정" || a.reviewStatus === "오디션 대상").length;
+  const reviewing = applications.filter(
+    (a) => a.reviewStatus === "검토 중" || a.reviewStatus === "미확인",
+  ).length;
+  const audition = applications.filter(
+    (a) => a.applyStatus === "오디션 예정" || a.reviewStatus === "오디션 대상",
+  ).length;
   const results = applications.filter((a) => a.applyStatus === "결과 발표").length;
 
   // Aggregate events from my applications
@@ -44,19 +54,52 @@ function ApplicantHome() {
     for (const app of applications) {
       const show = findShow(app.showId);
       if (!show) continue;
-      const roleNames = app.roleIds.map((rid) => findRole(show, rid)?.name).filter(Boolean).join(", ");
-      list.push({ kind: "지원 마감", date: show.deadline, showTitle: show.title, role: roleNames, showId: show.id });
-      list.push({ kind: "오디션", date: show.auditionDate, showTitle: show.title, role: roleNames, showId: show.id });
+      const roleNames = app.roleIds
+        .map((rid) => findRole(show, rid)?.name)
+        .filter(Boolean)
+        .join(", ");
+      list.push({
+        kind: "지원 마감",
+        date: show.deadline,
+        showTitle: show.title,
+        role: roleNames,
+        showId: show.id,
+      });
+      list.push({
+        kind: "오디션",
+        date: show.auditionDate,
+        showTitle: show.title,
+        role: roleNames,
+        showId: show.id,
+      });
       const rStart = show.rehearsalPeriod.split(" – ")[0];
-      list.push({ kind: "연습", date: rStart, showTitle: show.title, role: roleNames, showId: show.id });
+      list.push({
+        kind: "연습",
+        date: rStart,
+        showTitle: show.title,
+        role: roleNames,
+        showId: show.id,
+      });
       const sStart = show.showPeriod.split(" – ")[0];
-      list.push({ kind: "공연", date: sStart, showTitle: show.title, role: roleNames, showId: show.id });
+      list.push({
+        kind: "공연",
+        date: sStart,
+        showTitle: show.title,
+        role: roleNames,
+        showId: show.id,
+      });
     }
     // Also include deadlines of open shows I've NOT applied to (soon-closing)
     for (const show of shows) {
       if (show.status !== "모집 중") continue;
       if (applications.some((a) => a.showId === show.id)) continue;
-      list.push({ kind: "지원 마감", date: show.deadline, showTitle: show.title, role: "미지원", showId: show.id });
+      list.push({
+        kind: "지원 마감",
+        date: show.deadline,
+        showTitle: show.title,
+        role: "미지원",
+        showId: show.id,
+      });
     }
     return list;
   }, [applications, shows]);
@@ -85,7 +128,7 @@ function ApplicantHome() {
     return cells;
   }, [cursor]);
 
-  const selectedEvents = selected ? eventsByDay[selected] ?? [] : [];
+  const selectedEvents = selected ? (eventsByDay[selected] ?? []) : [];
   const recent = applications.slice(0, 3);
 
   return (
@@ -111,7 +154,8 @@ function ApplicantHome() {
               안녕하세요, <span className="text-gold">{applicant.name}</span> 님
             </h1>
             <p className="mt-3 max-w-lg text-sm leading-relaxed opacity-80 md:text-base">
-              오늘도 잘 맞는 공연을 찾아 지원해 보세요. 한 번 등록한 자료는 계속 재사용할 수 있습니다.
+              오늘도 잘 맞는 공연을 찾아 지원해 보세요. 한 번 등록한 자료는 계속 재사용할 수
+              있습니다.
             </p>
             <Link
               to="/applicant/shows"
@@ -141,7 +185,9 @@ function ApplicantHome() {
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))}
+                  onClick={() =>
+                    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))
+                  }
                   className="rounded-md p-1.5 hover:bg-secondary"
                   aria-label="이전 달"
                 >
@@ -151,7 +197,9 @@ function ApplicantHome() {
                   {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
                 </div>
                 <button
-                  onClick={() => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))}
+                  onClick={() =>
+                    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))
+                  }
                   className="rounded-md p-1.5 hover:bg-secondary"
                   aria-label="다음 달"
                 >
@@ -163,7 +211,9 @@ function ApplicantHome() {
             <div className="px-3 py-3">
               <div className="grid grid-cols-7 text-center text-[11px] font-medium text-muted-foreground">
                 {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-                  <div key={d} className="py-1">{d}</div>
+                  <div key={d} className="py-1">
+                    {d}
+                  </div>
                 ))}
               </div>
               <div className="grid grid-cols-7 gap-1">
@@ -188,9 +238,14 @@ function ApplicantHome() {
                         {c.date.getDate()}
                       </span>
                       <div className="mt-auto flex gap-0.5">
-                        {Array.from(new Set(dayEvents.map((e) => e.kind))).slice(0, 4).map((k) => (
-                          <span key={k} className={`h-1.5 w-1.5 rounded-full ${KIND_META[k].dot}`} />
-                        ))}
+                        {Array.from(new Set(dayEvents.map((e) => e.kind)))
+                          .slice(0, 4)
+                          .map((k) => (
+                            <span
+                              key={k}
+                              className={`h-1.5 w-1.5 rounded-full ${KIND_META[k].dot}`}
+                            />
+                          ))}
                       </div>
                     </button>
                   );
@@ -220,8 +275,13 @@ function ApplicantHome() {
               ) : (
                 <ul className="space-y-2">
                   {selectedEvents.map((e, i) => (
-                    <li key={i} className="flex items-center gap-2 rounded-md border border-border bg-background p-2.5">
-                      <span className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold ${KIND_META[e.kind].color}`}>
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 rounded-md border border-border bg-background p-2.5"
+                    >
+                      <span
+                        className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold ${KIND_META[e.kind].color}`}
+                      >
                         {e.kind}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -250,7 +310,10 @@ function ApplicantHome() {
               <h2 className="text-base font-semibold">내 지원 현황</h2>
               <p className="mt-1 text-xs text-muted-foreground">최근 제출한 지원서</p>
             </div>
-            <Link to="/applicant/applications" className="text-xs font-medium text-primary hover:underline">
+            <Link
+              to="/applicant/applications"
+              className="text-xs font-medium text-primary hover:underline"
+            >
               전체 지원 현황 보기 →
             </Link>
           </div>

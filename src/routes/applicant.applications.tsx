@@ -31,9 +31,14 @@ function MyApplications() {
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">내 지원 현황</h1>
-          <p className="mt-1 text-sm text-muted-foreground">지원한 공연과 다음 일정을 한 화면에서 확인합니다.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            지원한 공연과 다음 일정을 한 화면에서 확인합니다.
+          </p>
         </div>
-        <Link to="/applicant/shows" className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
+        <Link
+          to="/applicant/shows"
+          className="inline-flex items-center gap-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground"
+        >
           <Search className="h-4 w-4" /> 새 공연 찾기
         </Link>
       </div>
@@ -85,9 +90,15 @@ function MyApplications() {
                   <div className="mt-0.5 text-xs text-muted-foreground">지원 배역: {roleName}</div>
                   <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 md:grid-cols-4">
                     <MiniStat label="지원일" value={app.submittedAt.split(" ")[0]} />
-                    <MiniStat label="지원 마감" value={`${show.deadline}${dLeft >= 0 ? ` (D-${dLeft})` : ""}`} />
+                    <MiniStat
+                      label="지원 마감"
+                      value={`${show.deadline}${dLeft >= 0 ? ` (D-${dLeft})` : ""}`}
+                    />
                     <MiniStat label="다음 일정" value={`오디션 ${show.auditionDate}`} />
-                    <MiniStat label="제출 자료" value={`${app.selectedPhotoIds.length + app.selectedVideoIds.length}개`} />
+                    <MiniStat
+                      label="제출 자료"
+                      value={`${app.selectedPhotoIds.length + app.selectedVideoIds.length}개`}
+                    />
                   </div>
                 </div>
                 <Link
