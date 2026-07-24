@@ -103,7 +103,7 @@ function ProducerLayout() {
 
 function BrandMark() {
   return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(58,26,44,0.22)]">
+    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
       <svg
         viewBox="0 0 24 24"
         className="h-4 w-4"

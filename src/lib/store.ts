@@ -84,6 +84,7 @@ export type Show = {
   title: string;
   producer: string;
   posterColor: string;
+  posterImage: string;
   kind: string;
   description: string;
   roles: ShowRole[];
@@ -167,28 +168,28 @@ const meApplicant: Applicant = {
       type: "정면 프로필",
       createdAt: "2026.05.02",
       isDefault: true,
-      color: "#7a2c46",
+      color: "#171717",
     },
     {
       id: "p2",
       fileName: "profile-full.jpg",
       type: "전신 프로필",
       createdAt: "2026.05.02",
-      color: "#a8607a",
+      color: "#6f7477",
     },
     {
       id: "p3",
       fileName: "profile-upper.jpg",
       type: "상반신 프로필",
       createdAt: "2026.04.14",
-      color: "#c98a6b",
+      color: "#c7d228",
     },
     {
       id: "p4",
       fileName: "concept-moonlight.jpg",
       type: "콘셉트 사진",
       createdAt: "2026.03.30",
-      color: "#5a3d6b",
+      color: "#344054",
     },
   ],
   videos: [
@@ -199,7 +200,7 @@ const meApplicant: Applicant = {
       type: "노래 자유곡 영상",
       duration: "1:48",
       createdAt: "2026.05.10",
-      color: "#7a2c46",
+      color: "#171717",
     },
     {
       id: "v2",
@@ -208,7 +209,7 @@ const meApplicant: Applicant = {
       type: "연기 자유 영상",
       duration: "1:25",
       createdAt: "2026.04.22",
-      color: "#5a3d6b",
+      color: "#344054",
     },
     {
       id: "v3",
@@ -217,7 +218,7 @@ const meApplicant: Applicant = {
       type: "안무 영상",
       duration: "1:10",
       createdAt: "2026.03.18",
-      color: "#c98a6b",
+      color: "#c7d228",
     },
   ],
   docs: [
@@ -265,14 +266,14 @@ const otherApplicants: Applicant[] = [
         type: "정면 프로필",
         createdAt: "2026.05.01",
         isDefault: true,
-        color: "#3b3653",
+        color: "#242424",
       },
       {
         id: "p2",
         fileName: "junho-full.jpg",
         type: "전신 프로필",
         createdAt: "2026.05.01",
-        color: "#5c4a6b",
+        color: "#62686c",
       },
     ],
     videos: [
@@ -283,7 +284,7 @@ const otherApplicants: Applicant[] = [
         type: "노래 자유곡 영상",
         duration: "1:55",
         createdAt: "2026.05.05",
-        color: "#3b3653",
+        color: "#242424",
       },
       {
         id: "v2",
@@ -292,7 +293,7 @@ const otherApplicants: Applicant[] = [
         type: "연기 자유 영상",
         duration: "1:30",
         createdAt: "2026.04.28",
-        color: "#5c4a6b",
+        color: "#62686c",
       },
     ],
     docs: [],
@@ -326,21 +327,21 @@ const otherApplicants: Applicant[] = [
         type: "정면 프로필",
         createdAt: "2026.04.20",
         isDefault: true,
-        color: "#a8607a",
+        color: "#6f7477",
       },
       {
         id: "p2",
         fileName: "seoyeon-full.jpg",
         type: "전신 프로필",
         createdAt: "2026.04.20",
-        color: "#c98a6b",
+        color: "#c7d228",
       },
       {
         id: "p3",
         fileName: "seoyeon-concept.jpg",
         type: "콘셉트 사진",
         createdAt: "2026.04.05",
-        color: "#7a2c46",
+        color: "#171717",
       },
     ],
     videos: [
@@ -351,7 +352,7 @@ const otherApplicants: Applicant[] = [
         type: "노래 자유곡 영상",
         duration: "1:40",
         createdAt: "2026.05.02",
-        color: "#a8607a",
+        color: "#6f7477",
       },
     ],
     docs: [],
@@ -394,7 +395,7 @@ const otherApplicants: Applicant[] = [
         type: "정면 프로필",
         createdAt: "2026.04.15",
         isDefault: true,
-        color: "#5c4a6b",
+        color: "#62686c",
       },
     ],
     videos: [
@@ -405,7 +406,7 @@ const otherApplicants: Applicant[] = [
         type: "안무 영상",
         duration: "1:20",
         createdAt: "2026.04.30",
-        color: "#5c4a6b",
+        color: "#62686c",
       },
       {
         id: "v2",
@@ -414,7 +415,7 @@ const otherApplicants: Applicant[] = [
         type: "노래 자유곡 영상",
         duration: "1:50",
         createdAt: "2026.04.30",
-        color: "#3b3653",
+        color: "#242424",
       },
     ],
     docs: [],
@@ -440,7 +441,8 @@ const shows: Show[] = [
     id: "show-moonlight",
     title: "뮤지컬 달빛",
     producer: "라이트스테이지",
-    posterColor: "#5a3d6b",
+    posterColor: "#344054",
+    posterImage: "/images/editorial/poster-moonlight.jpg",
     kind: "뮤지컬",
     description:
       "잊혀진 도시의 밤을 배경으로, 서로 다른 시간을 살아온 두 사람의 만남과 이별을 그리는 창작 뮤지컬입니다. 감정선이 섬세한 넘버와 몰입감 있는 서사로 관객을 초대합니다.",
@@ -503,7 +505,8 @@ const shows: Show[] = [
     id: "show-cityrain",
     title: "뮤지컬 시티레인",
     producer: "스타라이트컴퍼니",
-    posterColor: "#3b3653",
+    posterColor: "#242424",
+    posterImage: "/images/editorial/poster-cityrain.jpg",
     kind: "뮤지컬",
     description:
       "비 오는 도시를 배경으로 한 세 청춘의 성장 뮤지컬. 재즈와 팝을 오가는 넘버가 특징입니다.",
@@ -553,7 +556,8 @@ const shows: Show[] = [
     id: "show-summerplay",
     title: "연극 여름의 끝",
     producer: "시선극단",
-    posterColor: "#7a2c46",
+    posterColor: "#171717",
+    posterImage: "/images/editorial/poster-summerplay.jpg",
     kind: "연극",
     description: "여름의 끝자락, 헤어지는 두 사람의 마지막 하루를 그린 2인극.",
     roles: [
@@ -592,6 +596,7 @@ const shows: Show[] = [
     title: "뮤지컬 나이트폴",
     producer: "블루스테이지",
     posterColor: "#2a4759",
+    posterImage: "/images/editorial/poster-nightfall.jpg",
     kind: "뮤지컬",
     description: "밤에만 열리는 극장의 비밀을 다루는 판타지 뮤지컬.",
     roles: [
@@ -764,7 +769,7 @@ export const useStore = create<Store>((set, get) => ({
 
   addPhoto: () =>
     set((s) => {
-      const colors = ["#7a2c46", "#5a3d6b", "#a8607a", "#c98a6b", "#3b3653"];
+      const colors = ["#171717", "#344054", "#6f7477", "#c7d228", "#242424"];
       const types: Photo["type"][] = ["정면 프로필", "전신 프로필", "상반신 프로필", "콘셉트 사진"];
       const idx = s.applicant.photos.length;
       const newPhoto: Photo = {
@@ -779,7 +784,7 @@ export const useStore = create<Store>((set, get) => ({
 
   addVideo: () =>
     set((s) => {
-      const colors = ["#7a2c46", "#5a3d6b", "#a8607a", "#c98a6b"];
+      const colors = ["#171717", "#344054", "#6f7477", "#c7d228"];
       const types: Video["type"][] = [
         "연기 자유 영상",
         "지정 연기 영상",
