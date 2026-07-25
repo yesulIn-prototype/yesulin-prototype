@@ -32,7 +32,9 @@ function FilesPage() {
               key={t}
               onClick={() => setTab(t)}
               className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                tab === t ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                tab === t
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
               }`}
             >
               {t}
@@ -40,12 +42,18 @@ function FilesPage() {
           ))}
         </div>
         {tab === "사진" && (
-          <button onClick={addPhoto} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+          <button
+            onClick={addPhoto}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          >
             <Plus className="h-3 w-3" /> 사진 추가
           </button>
         )}
         {tab === "영상" && (
-          <button onClick={addVideo} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground">
+          <button
+            onClick={addVideo}
+            className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+          >
             <Plus className="h-3 w-3" /> 영상 추가
           </button>
         )}
@@ -61,7 +69,9 @@ function FilesPage() {
                   <div className="truncate text-xs font-medium">{p.fileName}</div>
                   {p.isDefault && <Star className="h-3 w-3 fill-gold text-gold" />}
                 </div>
-                <div className="text-[10px] text-muted-foreground">{p.type} · {p.createdAt}</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {p.type} · {p.createdAt}
+                </div>
               </div>
             </div>
           ))}
@@ -75,7 +85,9 @@ function FilesPage() {
               <VideoTile color={v.color} duration={v.duration} />
               <div className="p-3">
                 <div className="truncate text-sm font-medium">{v.title}</div>
-                <div className="text-xs text-muted-foreground">{v.type} · {v.duration}</div>
+                <div className="text-xs text-muted-foreground">
+                  {v.type} · {v.duration}
+                </div>
                 <div className="text-[10px] text-muted-foreground">{v.createdAt}</div>
               </div>
             </div>
@@ -86,12 +98,19 @@ function FilesPage() {
       {tab === "문서" && (
         <div className="space-y-2">
           {applicant.docs.map((d) => (
-            <div key={d.id} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+            <div
+              key={d.id}
+              className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
+            >
               <div>
                 <div className="text-sm font-medium">{d.fileName}</div>
-                <div className="text-xs text-muted-foreground">{d.type} · {d.createdAt}</div>
+                <div className="text-xs text-muted-foreground">
+                  {d.type} · {d.createdAt}
+                </div>
               </div>
-              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">{d.type}</span>
+              <span className="rounded-full bg-secondary px-2 py-0.5 text-[10px] text-secondary-foreground">
+                {d.type}
+              </span>
             </div>
           ))}
         </div>

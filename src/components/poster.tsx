@@ -45,7 +45,15 @@ export function Poster({
   );
 }
 
-export function PhotoTile({ color, label, className = "" }: { color: string; label: string; className?: string }) {
+export function PhotoTile({
+  color,
+  label,
+  className = "",
+}: {
+  color: string;
+  label: string;
+  className?: string;
+}) {
   return (
     <div
       className={`relative flex items-end overflow-hidden rounded-md ${className}`}
@@ -69,7 +77,15 @@ export function PhotoTile({ color, label, className = "" }: { color: string; lab
   );
 }
 
-export function VideoTile({ color, duration, className = "" }: { color: string; duration: string; className?: string }) {
+export function VideoTile({
+  color,
+  duration,
+  className = "",
+}: {
+  color: string;
+  duration: string;
+  className?: string;
+}) {
   return (
     <div
       className={`relative flex items-center justify-center overflow-hidden rounded-md ${className}`}

@@ -52,13 +52,18 @@ function ProducerHome() {
             const unr = apps.filter((a) => a.reviewStatus === "미확인").length;
             const dLeft = daysUntil(show.deadline);
             return (
-              <div key={show.id} className="flex overflow-hidden rounded-xl border border-border bg-card">
+              <div
+                key={show.id}
+                className="flex overflow-hidden rounded-xl border border-border bg-card"
+              >
                 <Poster title={show.title} color={show.posterColor} className="w-24 shrink-0" />
                 <div className="flex flex-1 flex-col p-4">
                   <div className="flex items-center gap-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        show.status === "모집 중" ? "bg-success/15 text-success" : "bg-muted text-muted-foreground"
+                        show.status === "모집 중"
+                          ? "bg-success/15 text-success"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {show.status}
@@ -99,7 +104,7 @@ function ProducerHome() {
 
       <section>
         <h2 className="text-base font-semibold">최근 지원자</h2>
-        <div className="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+        <div className="mt-3 hidden overflow-hidden rounded-xl border border-border bg-card md:block">
           <table className="w-full text-sm">
             <thead className="bg-secondary/60 text-xs">
               <tr>
@@ -113,19 +118,51 @@ function ProducerHome() {
             <tbody>
               {applications.slice(0, 6).map((a) => {
                 const show = shows.find((s) => s.id === a.showId);
-                const roleName = a.roleIds.map((r) => show?.roles.find((sr) => sr.id === r)?.name).join(", ");
+                const roleName = a.roleIds
+                  .map((r) => show?.roles.find((sr) => sr.id === r)?.name)
+                  .join(", ");
                 return (
                   <tr key={a.id} className="border-t border-border hover:bg-secondary/40">
                     <td className="px-4 py-2.5 font-medium">{a.applicantName}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{show?.title}</td>
                     <td className="px-4 py-2.5">{roleName}</td>
                     <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.submittedAt}</td>
-                    <td className="px-4 py-2.5"><ReviewBadge status={a.reviewStatus} /></td>
+                    <td className="px-4 py-2.5">
+                      <ReviewBadge status={a.reviewStatus} />
+                    </td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+        </div>
+        <div className="mt-3 grid gap-3 md:hidden">
+          {applications.slice(0, 6).map((application) => {
+            const show = shows.find((item) => item.id === application.showId);
+            const roleName = application.roleIds
+              .map((roleId) => show?.roles.find((role) => role.id === roleId)?.name)
+              .join(", ");
+            return (
+              <Link
+                key={application.id}
+                to="/producer/shows/$id/applicants/$appId"
+                params={{ id: application.showId, appId: application.id }}
+                className="rounded-xl border border-border bg-card p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{application.applicantName}</div>
+                    <div className="mt-1 text-xs text-muted-foreground">{show?.title}</div>
+                  </div>
+                  <ReviewBadge status={application.reviewStatus} />
+                </div>
+                <div className="mt-3 text-sm">
+                  <span className="text-muted-foreground">지원 배역 </span>
+                  <strong>{roleName}</strong>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>
@@ -133,20 +170,30 @@ function ProducerHome() {
 }
 
 function Stat({
-  icon: Icon, label, value, accent,
+  icon: Icon,
+  label,
+  value,
+  accent,
 }: {
-  icon: React.ElementType; label: string; value: string; accent?: "gold" | "warning";
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  accent?: "gold" | "warning";
 }) {
   const color =
-    accent === "gold" ? "bg-gold/15 text-gold-foreground"
-      : accent === "warning" ? "bg-warning/15 text-warning-foreground"
+    accent === "gold"
+      ? "bg-gold/15 text-gold-foreground"
+      : accent === "warning"
+        ? "bg-warning/15 text-warning-foreground"
         : "bg-primary/10 text-primary";
   return (
     <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
       <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
         <Icon className="h-4 w-4" />
       </div>
-      <div className="mt-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="mt-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+        {label}
+      </div>
       <div className="mt-1 font-display text-2xl tabular-nums">{value}</div>
     </div>
   );

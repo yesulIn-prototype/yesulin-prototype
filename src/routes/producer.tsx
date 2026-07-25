@@ -29,7 +29,9 @@ function ProducerLayout() {
         </Link>
         <nav className="flex-1 space-y-0.5 p-3" aria-label="주요 메뉴">
           {nav.map((item) => {
-            const active = item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);
+            const active = item.exact
+              ? location.pathname === item.to
+              : location.pathname.startsWith(item.to);
             const Icon = item.icon;
             return (
               <Link
@@ -68,9 +70,14 @@ function ProducerLayout() {
             <span className="text-sm font-semibold">공연사 콘솔</span>
           </Link>
         </header>
-        <nav className="flex gap-1 overflow-x-auto border-b border-border/70 bg-background/90 px-4 py-2 lg:hidden" aria-label="주요 메뉴">
+        <nav
+          className="flex gap-1 overflow-x-auto border-b border-border/70 bg-background/90 px-4 py-2 lg:hidden"
+          aria-label="주요 메뉴"
+        >
           {nav.map((item) => {
-            const active = item.exact ? location.pathname === item.to : location.pathname.startsWith(item.to);
+            const active = item.exact
+              ? location.pathname === item.to
+              : location.pathname.startsWith(item.to);
             const Icon = item.icon;
             return (
               <Link
@@ -97,7 +104,14 @@ function ProducerLayout() {
 function BrandMark() {
   return (
     <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(58,26,44,0.22)]">
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg
+        viewBox="0 0 24 24"
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
         <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
         <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
       </svg>

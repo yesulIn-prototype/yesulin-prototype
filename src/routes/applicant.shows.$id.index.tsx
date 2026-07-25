@@ -2,7 +2,15 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useStore, daysUntil } from "@/lib/store";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
-import { CalendarDays, MapPin, Users2, Coins, CheckCircle2, ChevronLeft } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  MapPin,
+  Users2,
+  Coins,
+  CheckCircle2,
+  ChevronLeft,
+} from "lucide-react";
 
 export const Route = createFileRoute("/applicant/shows/$id/")({
   component: ShowDetail,
@@ -11,22 +19,32 @@ export const Route = createFileRoute("/applicant/shows/$id/")({
 function ShowDetail() {
   const { id } = Route.useParams();
   const show = useStore((s) => s.shows.find((sh) => sh.id === id));
-  const myApp = useStore((s) => s.applications.find((a) => a.showId === id && a.applicantId === "me"));
+  const myApp = useStore((s) =>
+    s.applications.find((a) => a.showId === id && a.applicantId === "me"),
+  );
 
   if (!show) throw notFound();
+  const isOpen = show.status === "모집 중";
 
   return (
     <div className="space-y-6">
-      <Link to="/applicant/shows" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/applicant/shows"
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ChevronLeft className="h-4 w-4" /> 공연 목록으로
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <Poster title={show.title} color={show.posterColor} className="h-[360px] lg:h-full" />
+      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+        <Poster title={show.title} color={show.posterColor} className="h-56 lg:h-full" />
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">{show.kind}</span>
-            {show.status === "모집 중" ? <DeadlineBadge daysLeft={daysUntil(show.deadline)} /> : (
+            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">
+              {show.kind}
+            </span>
+            {show.status === "모집 중" ? (
+              <DeadlineBadge daysLeft={daysUntil(show.deadline)} />
+            ) : (
               <span className="rounded-full bg-muted px-2 py-0.5 text-xs">{show.status}</span>
             )}
             {myApp && (
@@ -61,11 +79,17 @@ function ShowDetail() {
               <div className="flex items-center justify-between">
                 <div className="font-semibold">{r.name}</div>
                 {r.allowMultiple && (
-                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">복수 지원 가능</span>
+                  <span className="rounded-full bg-secondary px-2 py-0.5 text-[11px] text-secondary-foreground">
+                    복수 지원 가능
+                  </span>
                 )}
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{r.description}</p>
-              {r.requirements && <div className="mt-2 text-xs text-muted-foreground">지원 조건: {r.requirements}</div>}
+              {r.requirements && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  지원 조건: {r.requirements}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -76,13 +100,15 @@ function ShowDetail() {
         <RequirementCard title="선택 제출 항목" items={show.optionalItems} />
       </section>
 
-      <div className="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
+      <div className="sticky bottom-[5.4rem] z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-[var(--shadow-elev-3)] backdrop-blur md:bottom-4">
         <div className="text-sm">
           <div className="font-medium">
             {myApp ? "이미 지원한 공연입니다" : "저장된 프로필과 자료로 바로 지원할 수 있습니다"}
           </div>
           <div className="text-xs text-muted-foreground">
-            {show.status === "모집 중" ? `지원 마감 ${show.deadline} (D-${daysUntil(show.deadline)})` : "모집이 종료되었습니다"}
+            {isOpen
+              ? `지원 마감 ${show.deadline} (D-${daysUntil(show.deadline)})`
+              : `${show.deadline}에 마감된 공고입니다`}
           </div>
         </div>
         {myApp ? (
@@ -92,22 +118,37 @@ function ShowDetail() {
           >
             제출한 지원서 보기
           </Link>
-        ) : (
+        ) : isOpen ? (
           <Link
             to="/applicant/shows/$id/apply"
             params={{ id: show.id }}
-            disabled={show.status !== "모집 중"}
-            className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow hover:opacity-90 aria-disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-5 py-2.5 text-center text-sm font-medium text-primary-foreground shadow hover:opacity-90 sm:w-auto"
           >
             지원서 작성하기
           </Link>
+        ) : (
+          <button
+            type="button"
+            disabled
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-muted px-5 py-2.5 text-sm font-medium text-muted-foreground sm:w-auto"
+          >
+            <AlertCircle className="h-4 w-4" /> 지원이 마감되었습니다
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function InfoRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+}) {
   return (
     <div className="flex items-start gap-2 rounded-lg border border-border/70 p-3">
       <Icon className="mt-0.5 h-4 w-4 text-primary" />
@@ -132,7 +173,9 @@ function RequirementCard({
     <div className="rounded-2xl border border-border bg-card p-6">
       <h3 className="text-sm font-semibold">{title}</h3>
       <ul className="mt-3 space-y-2">
-        {items.length === 0 && <li className="text-xs text-muted-foreground">해당 항목이 없습니다.</li>}
+        {items.length === 0 && (
+          <li className="text-xs text-muted-foreground">해당 항목이 없습니다.</li>
+        )}
         {items.map((it) => (
           <li key={it.key} className="flex items-start gap-2 text-sm">
             <span

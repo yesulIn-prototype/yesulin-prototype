@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { PhotoTile, VideoTile } from "@/components/poster";
 import { Check, ChevronLeft, ChevronRight, Info, AlertTriangle, Sparkles } from "lucide-react";
@@ -17,6 +17,18 @@ const STEPS = [
   "추가 질문",
   "미리보기 및 제출",
 ];
+
+type ApplicationDraft = {
+  step: number;
+  roleIds: string[];
+  profile: Record<string, string>;
+  careerMode: "all" | "select";
+  careerIds: string[];
+  photoMap: Record<string, string>;
+  videoMap: Record<string, string>;
+  answers: Record<string, string>;
+  motivation: string;
+};
 
 function ApplyWizard() {
   const { id } = Route.useParams();
@@ -38,18 +50,100 @@ function ApplyWizard() {
     bio: applicant.bio,
   });
   const [careerMode, setCareerMode] = useState<"all" | "select">("select");
-  const [careerIds, setCareerIds] = useState<string[]>(applicant.careers.slice(0, 2).map((c) => c.id));
+  const [careerIds, setCareerIds] = useState<string[]>(
+    applicant.careers.slice(0, 2).map((c) => c.id),
+  );
   const [photoMap, setPhotoMap] = useState<Record<string, string>>({}); // reqKey -> photoId
   const [videoMap, setVideoMap] = useState<Record<string, string>>({});
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [motivation, setMotivation] = useState("");
   const [visited, setVisited] = useState<Record<number, boolean>>({ 0: true });
-  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; missing: string[] }>({ open: false, missing: [] });
+  const [confirmDialog, setConfirmDialog] = useState<{ open: boolean; missing: string[] }>({
+    open: false,
+    missing: [],
+  });
+  const [draftReady, setDraftReady] = useState(false);
+  const [saveStatus, setSaveStatus] = useState("저장된 작성 내용을 확인하고 있습니다");
+  const draftKey = `audition-application-draft:${id}`;
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(draftKey);
+      if (raw) {
+        const draft = JSON.parse(raw) as Partial<ApplicationDraft>;
+        if (typeof draft.step === "number") {
+          setStep(draft.step);
+          setVisited(
+            Object.fromEntries(Array.from({ length: draft.step + 1 }, (_, index) => [index, true])),
+          );
+        }
+        if (Array.isArray(draft.roleIds)) setRoleIds(draft.roleIds);
+        if (draft.profile) setProfile((current) => ({ ...current, ...draft.profile }));
+        if (draft.careerMode) setCareerMode(draft.careerMode);
+        if (Array.isArray(draft.careerIds)) setCareerIds(draft.careerIds);
+        if (draft.photoMap) setPhotoMap(draft.photoMap);
+        if (draft.videoMap) setVideoMap(draft.videoMap);
+        if (draft.answers) setAnswers(draft.answers);
+        if (typeof draft.motivation === "string") setMotivation(draft.motivation);
+        setSaveStatus("이 기기에 저장된 작성 내용을 불러왔습니다");
+      } else {
+        setSaveStatus("작성 내용은 이 기기에 자동 저장됩니다");
+      }
+    } catch {
+      setSaveStatus("저장된 내용을 불러오지 못했습니다. 새 지원서로 시작합니다");
+    } finally {
+      setDraftReady(true);
+    }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    const timer = window.setTimeout(() => {
+      try {
+        const draft: ApplicationDraft = {
+          step,
+          roleIds,
+          profile,
+          careerMode,
+          careerIds,
+          photoMap,
+          videoMap,
+          answers,
+          motivation,
+        };
+        window.localStorage.setItem(draftKey, JSON.stringify(draft));
+        const savedAt = new Date().toLocaleTimeString("ko-KR", {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+        setSaveStatus(`자동 저장됨 · ${savedAt}`);
+      } catch {
+        setSaveStatus("자동 저장하지 못했습니다. 입력 내용을 확인해 주세요");
+      }
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [
+    answers,
+    careerIds,
+    careerMode,
+    draftKey,
+    draftReady,
+    motivation,
+    photoMap,
+    profile,
+    roleIds,
+    step,
+    videoMap,
+  ]);
 
   if (!show) throw notFound();
 
-  const photoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) => r.key.startsWith("photo-"));
-  const videoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) => r.key.startsWith("video-"));
+  const photoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) =>
+    r.key.startsWith("photo-"),
+  );
+  const videoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) =>
+    r.key.startsWith("video-"),
+  );
   const hasMotivation = show.requiredItems.some((r) => r.key === "motivation");
 
   // Per-step missing (only the required items for that step)
@@ -61,7 +155,11 @@ function ApplyWizard() {
     if (!profile.phone.trim()) m[1].push("연락처");
     if (!profile.email.trim()) m[1].push("이메일");
     // step 2 career
-    if (show.requiredItems.some((r) => r.key === "career") && careerMode === "select" && careerIds.length === 0) {
+    if (
+      show.requiredItems.some((r) => r.key === "career") &&
+      careerMode === "select" &&
+      careerIds.length === 0
+    ) {
       m[2].push("경력 선택");
     }
     // step 3 photos
@@ -75,14 +173,27 @@ function ApplyWizard() {
     // step 5 additional
     if (hasMotivation && !motivation.trim()) m[5].push("지원 동기");
     return m;
-  }, [roleIds, profile, careerMode, careerIds, photoMap, videoMap, motivation, hasMotivation, show.requiredItems]);
+  }, [
+    roleIds,
+    profile,
+    careerMode,
+    careerIds,
+    photoMap,
+    videoMap,
+    motivation,
+    hasMotivation,
+    show.requiredItems,
+  ]);
 
   const missing = useMemo(() => {
     return Object.values(stepMissing).flat();
   }, [stepMissing]);
 
   const selectedCareers = useMemo(
-    () => (careerMode === "all" ? applicant.careers : applicant.careers.filter((c) => careerIds.includes(c.id))),
+    () =>
+      careerMode === "all"
+        ? applicant.careers
+        : applicant.careers.filter((c) => careerIds.includes(c.id)),
     [applicant.careers, careerIds, careerMode],
   );
 
@@ -98,11 +209,12 @@ function ApplyWizard() {
       memo: "",
       motivation,
     });
+    window.localStorage.removeItem(draftKey);
     navigate({ to: "/applicant/shows/$id/complete", params: { id: show!.id } });
   }
 
   function goToStep(next: number) {
-    setVisited((v) => ({ ...v, [next]: true }));
+    setVisited((v) => ({ ...v, [step]: true, [next]: true }));
     setStep(next);
   }
 
@@ -116,26 +228,47 @@ function ApplyWizard() {
   }
 
   function stepStatus(i: number): "완료" | "누락" | "작성 중" | "작성 전" {
+    if (i === step) return "작성 중";
+    if (!visited[i]) return "작성 전";
     if ((stepMissing[i] ?? []).length > 0) {
-      // if user has ever visited it, mark as 누락, otherwise 작성 전
-      return visited[i] ? "누락" : "작성 전";
+      return "누락";
     }
     return "완료";
   }
 
-
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Link to="/applicant/shows/$id" params={{ id: show.id }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/applicant/shows/$id"
+        params={{ id: show.id }}
+        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ChevronLeft className="h-4 w-4" /> {show.title} 상세로
       </Link>
 
       <div>
         <div className="text-xs uppercase tracking-widest text-muted-foreground">지원서 작성</div>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight">{show.title}</h1>
+        <div
+          className={`mt-2 inline-flex items-center gap-1.5 text-xs ${
+            saveStatus.includes("못했습니다") ? "text-destructive" : "text-muted-foreground"
+          }`}
+          aria-live="polite"
+        >
+          <span
+            aria-hidden
+            className={`h-1.5 w-1.5 rounded-full ${
+              saveStatus.includes("못했습니다") ? "bg-destructive" : "bg-success"
+            }`}
+          />
+          {saveStatus}
+        </div>
       </div>
 
-      <ol className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      <ol
+        className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7"
+        aria-label="지원서 작성 단계"
+      >
         {STEPS.map((s, i) => {
           const status = stepStatus(i);
           const isActive = i === step;
@@ -144,6 +277,7 @@ function ApplyWizard() {
             <li key={s}>
               <button
                 onClick={() => goToStep(i)}
+                aria-current={isActive ? "step" : undefined}
                 className={`relative w-full rounded-lg border p-2 text-left transition-colors ${
                   isActive
                     ? "border-primary bg-primary/5"
@@ -170,7 +304,9 @@ function ApplyWizard() {
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{s}</span>
                 </div>
-                <div className={`mt-1 text-[10px] ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}>
+                <div
+                  className={`mt-1 text-[10px] ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}
+                >
                   {status === "누락" ? `필수 ${missingCount}개 누락` : status}
                 </div>
               </button>
@@ -179,30 +315,38 @@ function ApplyWizard() {
         })}
       </ol>
 
-
       <div className="rounded-2xl border border-border bg-card p-6 md:p-8">
         {step === 0 && (
-          <StepBlock title="지원 배역 선택" hint="복수 지원 가능한 배역은 여러 개를 선택할 수 있습니다.">
+          <StepBlock
+            title="지원 배역 선택"
+            hint="복수 지원 가능한 배역은 여러 개를 선택할 수 있습니다."
+          >
             <div className="grid gap-3 md:grid-cols-2">
               {show.roles.map((r) => {
                 const active = roleIds.includes(r.id);
                 return (
                   <button
                     key={r.id}
+                    type="button"
+                    aria-pressed={active}
                     onClick={() =>
                       setRoleIds((prev) =>
                         prev.includes(r.id) ? prev.filter((x) => x !== r.id) : [...prev, r.id],
                       )
                     }
                     className={`text-left rounded-xl border p-4 transition-colors ${
-                      active ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                      active
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="font-semibold">{r.name}</div>
                       <div
                         className={`h-5 w-5 rounded-full border ${
-                          active ? "border-primary bg-primary text-primary-foreground" : "border-border"
+                          active
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border"
                         } inline-flex items-center justify-center`}
                       >
                         {active && <Check className="h-3 w-3" />}
@@ -222,28 +366,75 @@ function ApplyWizard() {
         )}
 
         {step === 1 && (
-          <StepBlock title="기본 프로필 확인" hint="내 프로필에서 자동으로 불러왔습니다. 이번 지원서에서만 수정할 수 있습니다.">
+          <StepBlock
+            title="기본 프로필 확인"
+            hint="내 프로필에서 자동으로 불러왔습니다. 이번 지원서에서만 수정할 수 있습니다."
+          >
             <InfoBanner>
-              수정한 내용은 <strong>이번 지원서에만</strong> 반영되며, 내 프로필 원본에는 자동으로 저장되지 않습니다.
+              수정한 내용은 <strong>이번 지원서에만</strong> 반영되며, 내 프로필 원본에는 자동으로
+              저장되지 않습니다.
             </InfoBanner>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="이름" value={profile.name} onChange={(v) => setProfile({ ...profile, name: v })} />
-              <Field label="활동명" value={profile.stageName} onChange={(v) => setProfile({ ...profile, stageName: v })} />
-              <Field label="연락처" value={profile.phone} onChange={(v) => setProfile({ ...profile, phone: v })} />
-              <Field label="이메일" value={profile.email} onChange={(v) => setProfile({ ...profile, email: v })} />
-              <Field label="생년월일" value={profile.birthDate} onChange={(v) => setProfile({ ...profile, birthDate: v })} />
-              <Field label="성별" value={profile.gender} onChange={(v) => setProfile({ ...profile, gender: v })} />
-              <Field label="키" value={profile.height} onChange={(v) => setProfile({ ...profile, height: v })} />
-              <Field label="프로필 한 줄 소개" value={profile.bio} onChange={(v) => setProfile({ ...profile, bio: v })} className="md:col-span-2" />
+              <Field
+                label="이름"
+                value={profile.name}
+                onChange={(v) => setProfile({ ...profile, name: v })}
+                required
+              />
+              <Field
+                label="활동명"
+                value={profile.stageName}
+                onChange={(v) => setProfile({ ...profile, stageName: v })}
+              />
+              <Field
+                label="연락처"
+                value={profile.phone}
+                onChange={(v) => setProfile({ ...profile, phone: v })}
+                required
+              />
+              <Field
+                label="이메일"
+                value={profile.email}
+                onChange={(v) => setProfile({ ...profile, email: v })}
+                required
+              />
+              <Field
+                label="생년월일"
+                value={profile.birthDate}
+                onChange={(v) => setProfile({ ...profile, birthDate: v })}
+              />
+              <Field
+                label="성별"
+                value={profile.gender}
+                onChange={(v) => setProfile({ ...profile, gender: v })}
+              />
+              <Field
+                label="키"
+                value={profile.height}
+                onChange={(v) => setProfile({ ...profile, height: v })}
+              />
+              <Field
+                label="프로필 한 줄 소개"
+                value={profile.bio}
+                onChange={(v) => setProfile({ ...profile, bio: v })}
+                className="md:col-span-2"
+              />
             </div>
           </StepBlock>
         )}
 
         {step === 2 && (
-          <StepBlock title="경력 선택" hint="내 프로필에 저장된 경력에서 이번 지원서에 포함할 항목을 선택합니다.">
+          <StepBlock
+            title="경력 선택"
+            hint="내 프로필에 저장된 경력에서 이번 지원서에 포함할 항목을 선택합니다."
+          >
             <div className="flex gap-2">
-              <ToggleChip active={careerMode === "all"} onClick={() => setCareerMode("all")}>전체 경력 사용</ToggleChip>
-              <ToggleChip active={careerMode === "select"} onClick={() => setCareerMode("select")}>선택한 경력만 제출</ToggleChip>
+              <ToggleChip active={careerMode === "all"} onClick={() => setCareerMode("all")}>
+                전체 경력 사용
+              </ToggleChip>
+              <ToggleChip active={careerMode === "select"} onClick={() => setCareerMode("select")}>
+                선택한 경력만 제출
+              </ToggleChip>
             </div>
             <div className="space-y-2">
               {applicant.careers.map((c) => {
@@ -260,19 +451,25 @@ function ApplyWizard() {
                       disabled={careerMode === "all"}
                       checked={active}
                       onChange={() =>
-                        setCareerIds((prev) => (prev.includes(c.id) ? prev.filter((x) => x !== c.id) : [...prev, c.id]))
+                        setCareerIds((prev) =>
+                          prev.includes(c.id) ? prev.filter((x) => x !== c.id) : [...prev, c.id],
+                        )
                       }
                       className="mt-1 h-4 w-4 accent-primary"
                     />
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="font-medium">{c.title}</div>
-                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">{c.kind}</span>
+                        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px] text-secondary-foreground">
+                          {c.kind}
+                        </span>
                       </div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {c.role} · {c.period} · {c.producer}
                       </div>
-                      {c.detail && <div className="mt-1 text-xs text-foreground/70">{c.detail}</div>}
+                      {c.detail && (
+                        <div className="mt-1 text-xs text-foreground/70">{c.detail}</div>
+                      )}
                     </div>
                   </label>
                 );
@@ -282,17 +479,29 @@ function ApplyWizard() {
         )}
 
         {step === 3 && (
-          <StepBlock title="사진 선택" hint="공연사가 요구한 사진 유형에 맞춰 내 사진 보관함에서 선택합니다.">
-            {photoRequirements.length === 0 && <p className="text-sm text-muted-foreground">이 공연은 사진 제출을 요구하지 않습니다.</p>}
+          <StepBlock
+            title="사진 선택"
+            hint="공연사가 요구한 사진 유형에 맞춰 내 사진 보관함에서 선택합니다."
+          >
+            {photoRequirements.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                이 공연은 사진 제출을 요구하지 않습니다.
+              </p>
+            )}
             <div className="space-y-6">
               {photoRequirements.map((req) => (
                 <div key={req.key}>
                   <div className="flex items-center gap-2">
                     <div className="text-sm font-medium">{req.label}</div>
-                    {req.required && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">필수</span>}
+                    {req.required && (
+                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                        필수
+                      </span>
+                    )}
                     {photoMap[req.key] && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] text-success">
-                        <Check className="h-3 w-3" /> {applicant.photos.find((p) => p.id === photoMap[req.key])?.fileName} 선택됨
+                        <Check className="h-3 w-3" />{" "}
+                        {applicant.photos.find((p) => p.id === photoMap[req.key])?.fileName} 선택됨
                       </span>
                     )}
                   </div>
@@ -303,14 +512,19 @@ function ApplyWizard() {
                         <button
                           key={p.id}
                           onClick={() => setPhotoMap({ ...photoMap, [req.key]: p.id })}
+                          aria-pressed={active}
                           className={`overflow-hidden rounded-lg border-2 text-left transition-all ${
-                            active ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/30"
+                            active
+                              ? "border-primary ring-2 ring-primary/20"
+                              : "border-transparent hover:border-primary/30"
                           }`}
                         >
                           <PhotoTile color={p.color} label={p.type} />
                           <div className="p-2">
                             <div className="truncate text-[11px] font-medium">{p.fileName}</div>
-                            <div className="truncate text-[10px] text-muted-foreground">{p.type}</div>
+                            <div className="truncate text-[10px] text-muted-foreground">
+                              {p.type}
+                            </div>
                           </div>
                         </button>
                       );
@@ -323,17 +537,28 @@ function ApplyWizard() {
         )}
 
         {step === 4 && (
-          <StepBlock title="영상 선택" hint="공연사가 요구한 영상 유형과 조건을 확인하고 내 영상 보관함에서 선택합니다.">
-            {videoRequirements.length === 0 && <p className="text-sm text-muted-foreground">이 공연은 영상 제출을 요구하지 않습니다.</p>}
+          <StepBlock
+            title="영상 선택"
+            hint="공연사가 요구한 영상 유형과 조건을 확인하고 내 영상 보관함에서 선택합니다."
+          >
+            {videoRequirements.length === 0 && (
+              <p className="text-sm text-muted-foreground">
+                이 공연은 영상 제출을 요구하지 않습니다.
+              </p>
+            )}
             <div className="space-y-6">
               {videoRequirements.map((req) => (
                 <div key={req.key}>
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="text-sm font-medium">{req.label}</div>
                     {req.required && (
-                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">필수</span>
+                      <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-semibold text-destructive">
+                        필수
+                      </span>
                     )}
-                    {req.note && <span className="text-[11px] text-muted-foreground">· {req.note}</span>}
+                    {req.note && (
+                      <span className="text-[11px] text-muted-foreground">· {req.note}</span>
+                    )}
                     {videoMap[req.key] && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-[10px] text-success">
                         <Check className="h-3 w-3" /> 선택됨
@@ -347,14 +572,19 @@ function ApplyWizard() {
                         <button
                           key={v.id}
                           onClick={() => setVideoMap({ ...videoMap, [req.key]: v.id })}
+                          aria-pressed={active}
                           className={`overflow-hidden rounded-lg border-2 text-left transition-all ${
-                            active ? "border-primary ring-2 ring-primary/20" : "border-transparent hover:border-primary/30"
+                            active
+                              ? "border-primary ring-2 ring-primary/20"
+                              : "border-transparent hover:border-primary/30"
                           }`}
                         >
                           <VideoTile color={v.color} duration={v.duration} />
                           <div className="p-2">
                             <div className="truncate text-xs font-medium">{v.title}</div>
-                            <div className="truncate text-[10px] text-muted-foreground">{v.type}</div>
+                            <div className="truncate text-[10px] text-muted-foreground">
+                              {v.type}
+                            </div>
                           </div>
                         </button>
                       );
@@ -370,10 +600,14 @@ function ApplyWizard() {
           <StepBlock title="공연별 추가 질문" hint="이 공연을 위해 공연사가 추가한 질문입니다.">
             {hasMotivation && (
               <div>
-                <label className="flex items-center gap-2 text-sm font-medium">
-                  지원 동기 <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] text-destructive">필수</span>
+                <label htmlFor="motivation" className="flex items-center gap-2 text-sm font-medium">
+                  지원 동기{" "}
+                  <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] text-destructive">
+                    필수
+                  </span>
                 </label>
                 <textarea
+                  id="motivation"
                   value={motivation}
                   onChange={(e) => setMotivation(e.target.value)}
                   rows={4}
@@ -384,9 +618,12 @@ function ApplyWizard() {
             )}
             {show.additionalQuestions.map((q) => (
               <div key={q.id}>
-                <label className="text-sm font-medium">{q.question}</label>
+                <label htmlFor={`question-${q.id}`} className="text-sm font-medium">
+                  {q.question}
+                </label>
                 {q.type === "긴 답변" && (
                   <textarea
+                    id={`question-${q.id}`}
                     rows={3}
                     value={answers[q.id] ?? ""}
                     onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
@@ -395,6 +632,7 @@ function ApplyWizard() {
                 )}
                 {q.type === "짧은 답변" && (
                   <input
+                    id={`question-${q.id}`}
                     value={answers[q.id] ?? ""}
                     onChange={(e) => setAnswers({ ...answers, [q.id]: e.target.value })}
                     className="mt-2 w-full rounded-md border border-input bg-background p-2 text-sm outline-none focus:border-primary"
@@ -419,7 +657,10 @@ function ApplyWizard() {
         )}
 
         {step === 6 && (
-          <StepBlock title="지원서 미리보기" hint="아래 내용으로 제출됩니다. 필수 항목이 모두 포함되어 있는지 확인하세요.">
+          <StepBlock
+            title="지원서 미리보기"
+            hint="아래 내용으로 제출됩니다. 필수 항목이 모두 포함되어 있는지 확인하세요."
+          >
             {missing.length > 0 ? (
               <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
@@ -452,7 +693,7 @@ function ApplyWizard() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="sticky bottom-[5.4rem] z-20 flex items-center justify-between rounded-xl border border-border bg-card/95 p-3 shadow-[var(--shadow-elev-2)] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         <button
           onClick={() => goToStep(Math.max(0, step - 1))}
           disabled={step === 0}
@@ -480,14 +721,22 @@ function ApplyWizard() {
       </div>
 
       {confirmDialog.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="missing-title"
+        >
           <div className="w-full max-w-md rounded-2xl bg-card p-6 shadow-2xl">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
               <div className="flex-1">
-                <h3 className="text-base font-semibold">필수 항목이 작성되지 않았습니다.</h3>
+                <h3 id="missing-title" className="text-base font-semibold">
+                  필수 항목이 작성되지 않았습니다.
+                </h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  현재 단계에 입력하지 않은 필수 항목이 있습니다. 그래도 다음 단계로 이동하시겠습니까?
+                  현재 단계에 입력하지 않은 필수 항목이 있습니다. 그래도 다음 단계로
+                  이동하시겠습니까?
                 </p>
                 <ul className="mt-3 list-disc space-y-0.5 pl-5 text-xs text-destructive">
                   {confirmDialog.missing.map((m) => (
@@ -520,8 +769,15 @@ function ApplyWizard() {
   );
 }
 
-
-function StepBlock({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
+function StepBlock({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-6">
       <div>
@@ -534,17 +790,34 @@ function StepBlock({ title, hint, children }: { title: string; hint?: string; ch
 }
 
 function Field({
-  label, value, onChange, className = "",
-}: { label: string; value: string; onChange: (v: string) => void; className?: string }) {
+  label,
+  value,
+  onChange,
+  className = "",
+  required,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  required?: boolean;
+}) {
+  const inputId = useId();
   return (
     <div className={className}>
-      <label className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+      <label
+        htmlFor={inputId}
+        className="flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground"
+      >
         {label}
+        {required && <span className="text-destructive">필수</span>}
         <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] font-medium text-primary">
           내 프로필에서 불러옴
         </span>
       </label>
       <input
+        id={inputId}
+        required={required}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary"
@@ -553,12 +826,24 @@ function Field({
   );
 }
 
-function ToggleChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function ToggleChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
-        active ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-secondary text-secondary-foreground hover:bg-accent"
       }`}
     >
       {children}
@@ -578,7 +863,14 @@ function InfoBanner({ children }: { children: React.ReactNode }) {
 import type { Show, Career } from "@/lib/store";
 
 function Preview({
-  show, profile, roleIds, careers, photoMap, videoMap, answers, motivation,
+  show,
+  profile,
+  roleIds,
+  careers,
+  photoMap,
+  videoMap,
+  answers,
+  motivation,
 }: {
   show: Show;
   profile: Record<string, string>;
@@ -596,30 +888,49 @@ function Preview({
       <div>
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">지원 배역</div>
         <div className="mt-1 flex flex-wrap gap-1">
-          {roles.length === 0 ? <span className="text-sm text-muted-foreground">-</span> : roles.map((r) => (
-            <span key={r.id} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">{r.name}</span>
-          ))}
+          {roles.length === 0 ? (
+            <span className="text-sm text-muted-foreground">-</span>
+          ) : (
+            roles.map((r) => (
+              <span
+                key={r.id}
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              >
+                {r.name}
+              </span>
+            ))
+          )}
         </div>
       </div>
       <div>
         <div className="text-[10px] uppercase tracking-widest text-muted-foreground">기본 정보</div>
         <div className="mt-1 grid gap-1 text-sm md:grid-cols-2">
-          <span>{profile.name} ({profile.stageName})</span>
-          <span>{profile.gender} · {profile.height} · {profile.birthDate}</span>
+          <span>
+            {profile.name} ({profile.stageName})
+          </span>
+          <span>
+            {profile.gender} · {profile.height} · {profile.birthDate}
+          </span>
           <span>{profile.phone}</span>
           <span>{profile.email}</span>
         </div>
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">선택한 경력 ({careers.length}건)</div>
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          선택한 경력 ({careers.length}건)
+        </div>
         <ul className="mt-1 space-y-1 text-sm">
           {careers.map((c) => (
-            <li key={c.id}>• {c.title} — {c.role} ({c.period})</li>
+            <li key={c.id}>
+              • {c.title} — {c.role} ({c.period})
+            </li>
           ))}
         </ul>
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">선택한 사진</div>
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          선택한 사진
+        </div>
         <div className="mt-2 flex flex-wrap gap-2">
           {Object.entries(photoMap).map(([k, id]) => {
             const p = applicant.photos.find((ph) => ph.id === id);
@@ -631,29 +942,43 @@ function Preview({
               </div>
             );
           })}
-          {Object.keys(photoMap).length === 0 && <span className="text-xs text-muted-foreground">선택된 사진 없음</span>}
+          {Object.keys(photoMap).length === 0 && (
+            <span className="text-xs text-muted-foreground">선택된 사진 없음</span>
+          )}
         </div>
       </div>
       <div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">선택한 영상</div>
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+          선택한 영상
+        </div>
         <div className="mt-2 space-y-1 text-sm">
           {Object.entries(videoMap).map(([k, id]) => {
             const v = applicant.videos.find((vd) => vd.id === id);
             if (!v) return null;
-            return <div key={k}>• {v.title} ({v.duration}) — {v.type}</div>;
+            return (
+              <div key={k}>
+                • {v.title} ({v.duration}) — {v.type}
+              </div>
+            );
           })}
-          {Object.keys(videoMap).length === 0 && <span className="text-xs text-muted-foreground">선택된 영상 없음</span>}
+          {Object.keys(videoMap).length === 0 && (
+            <span className="text-xs text-muted-foreground">선택된 영상 없음</span>
+          )}
         </div>
       </div>
       {motivation && (
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">지원 동기</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            지원 동기
+          </div>
           <p className="mt-1 whitespace-pre-wrap text-sm">{motivation}</p>
         </div>
       )}
       {show.additionalQuestions.length > 0 && (
         <div>
-          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">추가 질문 답변</div>
+          <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+            추가 질문 답변
+          </div>
           <ul className="mt-1 space-y-2 text-sm">
             {show.additionalQuestions.map((q) => (
               <li key={q.id}>

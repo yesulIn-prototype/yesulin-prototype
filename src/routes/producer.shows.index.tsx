@@ -14,7 +14,9 @@ function ShowsList() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">공연 관리</h1>
-        <p className="mt-1 text-sm text-muted-foreground">진행 중인 공연과 지원자 현황을 확인합니다.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          진행 중인 공연과 지원자 현황을 확인합니다.
+        </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {shows.map((show) => {
@@ -31,7 +33,9 @@ function ShowsList() {
                 <div className="text-xs text-muted-foreground">{show.producer}</div>
                 <div className="mt-0.5 truncate font-semibold">{show.title}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {show.status === "모집 중" ? `D-${daysUntil(show.deadline)} · ${show.deadline} 마감` : show.status}
+                  {show.status === "모집 중"
+                    ? `D-${daysUntil(show.deadline)} · ${show.deadline} 마감`
+                    : show.status}
                 </div>
                 <div className="mt-3 text-xs">
                   지원자 <strong>{apps.length}</strong>명 · 미확인{" "}

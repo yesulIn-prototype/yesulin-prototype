@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { useStore, daysUntil } from "@/lib/store";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
-import { Search } from "lucide-react";
+import { CalendarDays, CheckCircle2, RotateCcw, Search } from "lucide-react";
 
 export const Route = createFileRoute("/applicant/shows/")({
   component: ShowsList,
@@ -28,7 +28,9 @@ function ShowsList() {
       return true;
     });
     list = list.sort((a, b) =>
-      sortBy === "마감 임박" ? daysUntil(a.deadline) - daysUntil(b.deadline) : b.deadline.localeCompare(a.deadline),
+      sortBy === "마감 임박"
+        ? daysUntil(a.deadline) - daysUntil(b.deadline)
+        : b.deadline.localeCompare(a.deadline),
     );
     return list;
   }, [shows, q, kind, openOnly, sortBy]);
@@ -45,10 +47,12 @@ function ShowsList() {
             지원 가능한 공연을 확인하고 저장된 자료로 바로 지원하세요.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground">총 <strong className="text-foreground">{filtered.length}</strong>개 공연</div>
+        <div className="text-xs text-muted-foreground">
+          총 <strong className="text-foreground">{filtered.length}</strong>개 공연
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
+      <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)] md:grid-cols-[minmax(280px,1fr)_auto_auto_auto]">
         <div className="relative min-w-[220px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -67,7 +71,7 @@ function ShowsList() {
           <option value="뮤지컬">뮤지컬</option>
           <option value="연극">연극</option>
         </select>
-        <label className="inline-flex items-center gap-2 text-sm">
+        <label className="inline-flex min-h-10 items-center gap-2 rounded-md px-2 text-sm">
           <input
             type="checkbox"
             checked={openOnly}
@@ -86,18 +90,24 @@ function ShowsList() {
         </select>
       </div>
 
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-2">
         {filtered.map((show) => {
           const applied = appliedIds.has(show.id);
+          const requiredLabels = show.requiredItems.map((item) => item.label);
           return (
             <Link
               key={show.id}
               to="/applicant/shows/$id"
               params={{ id: show.id }}
-              className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-elev-1)] transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-[var(--shadow-elev-3)]"
+              className="group grid min-h-[272px] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-elev-1)] transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-[var(--shadow-elev-2)] sm:grid-cols-[168px_1fr]"
             >
-              <div className="relative">
-                <Poster title={show.title} color={show.posterColor} kind={show.kind} className="aspect-[5/6]" />
+              <div className="relative min-h-36 sm:min-h-full">
+                <Poster
+                  title={show.title}
+                  color={show.posterColor}
+                  kind={show.kind}
+                  className="absolute inset-0 h-full w-full rounded-none"
+                />
                 <div className="absolute left-3 top-3 flex items-center gap-1.5">
                   {show.status === "모집 중" ? (
                     <DeadlineBadge daysLeft={daysUntil(show.deadline)} />
@@ -113,28 +123,68 @@ function ShowsList() {
                   )}
                 </div>
               </div>
-              <div className="flex flex-1 flex-col p-5">
+              <div className="flex min-w-0 flex-1 flex-col p-5">
                 <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                   {show.kind}
                 </div>
-                <div className="mt-1 font-display text-xl leading-tight text-foreground">{show.title}</div>
+                <div className="mt-1 font-display text-2xl leading-tight text-foreground">
+                  {show.title}
+                </div>
                 <div className="mt-0.5 text-xs text-muted-foreground">{show.producer}</div>
-                <dl className="mt-4 space-y-1.5 border-t border-border/70 pt-3 text-xs">
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {show.roles.slice(0, 3).map((role) => (
+                    <span
+                      key={role.id}
+                      className="rounded-full border border-border bg-secondary/60 px-2 py-1 text-[11px] font-medium"
+                    >
+                      {role.name}
+                    </span>
+                  ))}
+                  {show.roles.length > 3 && (
+                    <span className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground">
+                      +{show.roles.length - 3}
+                    </span>
+                  )}
+                </div>
+                <dl className="mt-4 grid gap-2 border-t border-border/70 pt-3 text-xs sm:grid-cols-2">
                   <MetaLine label="모집 배역" value={show.roles.map((r) => r.name).join(", ")} />
                   <MetaLine label="지원 마감" value={show.deadline} />
+                  <MetaLine label="연습" value={show.rehearsalPeriod} />
                   <MetaLine label="오디션" value={show.auditionDate} />
                   <MetaLine label="공연" value={show.showPeriod} />
                 </dl>
-                <div className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary transition-all group-hover:gap-2">
-                  상세 보기 →
+                <div className="mt-3 flex items-start gap-2 rounded-lg bg-surface px-3 py-2 text-[11px] text-muted-foreground">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <span className="line-clamp-2">
+                    필수 자료 {requiredLabels.slice(0, 3).join(" · ")}
+                    {requiredLabels.length > 3 ? ` 외 ${requiredLabels.length - 3}개` : ""}
+                  </span>
+                </div>
+                <div className="mt-auto inline-flex items-center gap-1 pt-4 text-sm font-semibold text-primary transition-all group-hover:gap-2">
+                  공고 상세 확인 →
                 </div>
               </div>
             </Link>
           );
         })}
         {filtered.length === 0 && (
-          <div className="col-span-full rounded-2xl border border-dashed border-border bg-card p-16 text-center text-sm text-muted-foreground">
-            조건에 맞는 공연이 없습니다.
+          <div className="col-span-full rounded-2xl border border-dashed border-border bg-card px-6 py-16 text-center">
+            <CalendarDays className="mx-auto h-8 w-8 text-muted-foreground/60" />
+            <div className="mt-3 font-semibold">조건에 맞는 공고가 없습니다</div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              검색어를 지우거나 필터를 초기화해 전체 공고를 확인해 보세요.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setQ("");
+                setKind("전체");
+                setOpenOnly(false);
+              }}
+              className="mt-5 inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"
+            >
+              <RotateCcw className="h-4 w-4" /> 필터 초기화
+            </button>
           </div>
         )}
       </div>
@@ -144,11 +194,11 @@ function ShowsList() {
 
 function MetaLine({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-baseline gap-2">
-      <dt className="w-14 shrink-0 text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-        {label}
-      </dt>
-      <dd className="min-w-0 flex-1 truncate text-foreground/85">{value}</dd>
+    <div className="min-w-0">
+      <dt className="text-[10px] font-medium tracking-wide text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 truncate font-medium text-foreground/85" title={value}>
+        {value}
+      </dd>
     </div>
   );
 }
