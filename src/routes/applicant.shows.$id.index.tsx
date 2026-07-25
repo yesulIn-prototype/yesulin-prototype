@@ -36,7 +36,13 @@ function ShowDetail() {
       </Link>
 
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-        <Poster title={show.title} color={show.posterColor} className="h-56 lg:h-full" />
+        <Poster
+          title={show.title}
+          color={show.posterColor}
+          image={show.posterImage}
+          kind={show.kind}
+          className="h-56 lg:h-full"
+        />
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium text-secondary-foreground">

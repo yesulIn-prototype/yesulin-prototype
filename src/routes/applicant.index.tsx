@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useStore, daysUntil, findShow, findRole } from "@/lib/store";
 import { ApplyBadge } from "@/components/status-badge";
+import { Poster } from "@/components/poster";
 import {
   Search,
   ArrowRight,
@@ -133,22 +134,13 @@ function ApplicantHome() {
 
   return (
     <div className="space-y-10">
-      {/* Hero: greeting + main CTA + status counts */}
-      <section className="relative overflow-hidden rounded-2xl border border-primary/20 bg-primary text-primary-foreground shadow-[var(--shadow-elev-2)]">
-        <div className="stage-spotlight absolute inset-0" aria-hidden />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.08]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(90deg, rgba(255,255,255,0.6) 0 1px, transparent 1px 96px)",
-          }}
-        />
-        <div className="relative grid gap-8 p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end md:p-10">
-          <div className="min-w-0">
+      {/* Hero: next action first, supporting image and status second */}
+      <section className="grid overflow-hidden rounded-[1.5rem] bg-primary text-primary-foreground shadow-[var(--shadow-elev-2)] lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
+        <div className="relative flex flex-col justify-between p-6 md:p-10 lg:min-h-[390px]">
+          <div>
             <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] opacity-70">
               <span className="inline-block h-px w-6 bg-gold/70" />
-              Applicant Home
+              오늘의 워크스페이스
             </div>
             <h1 className="mt-3 font-display text-3xl leading-[1.1] md:text-5xl">
               안녕하세요, <span className="text-gold">{applicant.name}</span> 님
@@ -159,16 +151,27 @@ function ApplicantHome() {
             </p>
             <Link
               to="/applicant/shows"
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground shadow-[0_10px_30px_-8px_rgba(180,120,40,0.55)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-10px_rgba(180,120,40,0.65)]"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground shadow-[0_10px_30px_-8px_rgba(199,210,40,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-10px_rgba(199,210,40,0.5)]"
             >
               <Search className="h-4 w-4" /> 새로운 공연 찾기
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
-          <div className="grid grid-cols-3 gap-2 lg:w-[380px]">
+          <div className="mt-9 grid grid-cols-3 gap-2">
             <MiniStat label="검토 중" value={reviewing} />
             <MiniStat label="오디션 예정" value={audition} />
             <MiniStat label="결과 발표" value={results} />
+          </div>
+        </div>
+        <div className="relative min-h-64 overflow-hidden lg:min-h-full">
+          <img
+            src="/images/editorial/dashboard-applicant.jpg"
+            alt="연습실에서 안무를 연습하는 배우"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent lg:from-black/55" />
+          <div className="absolute bottom-5 right-5 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
+            Keep moving forward
           </div>
         </div>
       </section>
@@ -384,15 +387,28 @@ function ApplicantHome() {
                 key={show.id}
                 to="/applicant/shows/$id"
                 params={{ id: show.id }}
-                className="group rounded-xl border border-border bg-card p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                className="group grid min-h-36 grid-cols-[104px_1fr] overflow-hidden rounded-xl border border-border bg-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               >
-                <div className="text-xs text-muted-foreground">{show.producer}</div>
-                <div className="mt-1 text-sm font-semibold">{show.title}</div>
-                <div className="mt-2 text-xs text-muted-foreground">
-                  마감 {show.deadline} · 오디션 {show.auditionDate}
-                </div>
-                <div className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary">
-                  자세히 보기 <ArrowRight className="h-3 w-3" />
+                <Poster
+                  title={show.title}
+                  color={show.posterColor}
+                  image={show.posterImage}
+                  kind={show.kind}
+                  className="h-full rounded-none"
+                />
+                <div className="flex min-w-0 flex-col p-4">
+                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                    {show.producer}
+                  </div>
+                  <div className="mt-1 truncate text-sm font-semibold">{show.title}</div>
+                  <div className="mt-2 text-xs leading-5 text-muted-foreground">
+                    마감 {show.deadline}
+                    <br />
+                    오디션 {show.auditionDate}
+                  </div>
+                  <div className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-medium text-primary">
+                    자세히 보기 <ArrowRight className="h-3 w-3" />
+                  </div>
                 </div>
               </Link>
             ))}

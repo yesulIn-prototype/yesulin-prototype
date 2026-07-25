@@ -28,7 +28,13 @@ function ShowsList() {
               params={{ id: show.id }}
               className="flex overflow-hidden rounded-xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md"
             >
-              <Poster title={show.title} color={show.posterColor} className="w-28 shrink-0" />
+              <Poster
+                title={show.title}
+                color={show.posterColor}
+                image={show.posterImage}
+                kind={show.kind}
+                className="w-28 shrink-0"
+              />
               <div className="flex flex-1 flex-col p-4">
                 <div className="text-xs text-muted-foreground">{show.producer}</div>
                 <div className="mt-0.5 truncate font-semibold">{show.title}</div>

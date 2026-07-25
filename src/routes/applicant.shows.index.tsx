@@ -105,6 +105,7 @@ function ShowsList() {
                 <Poster
                   title={show.title}
                   color={show.posterColor}
+                  image={show.posterImage}
                   kind={show.kind}
                   className="absolute inset-0 h-full w-full rounded-none"
                 />

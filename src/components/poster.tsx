@@ -1,11 +1,13 @@
 export function Poster({
   title,
   color,
+  image,
   className = "",
   kind = "Musical",
 }: {
   title: string;
   color: string;
+  image?: string;
   className?: string;
   kind?: string;
 }) {
@@ -13,26 +15,40 @@ export function Poster({
     <div
       className={`relative flex items-end overflow-hidden rounded-lg ${className}`}
       style={{
-        backgroundImage: `linear-gradient(155deg, ${color} 0%, #1a1220 78%, #0d0810 100%)`,
+        backgroundImage: `linear-gradient(155deg, ${color} 0%, #171717 78%, #050505 100%)`,
       }}
     >
-      {/* Subtle stage spotlight */}
+      {image ? (
+        <img
+          src={image}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 22% 12%, rgba(255,255,255,0.28) 0%, transparent 45%), radial-gradient(circle at 78% 92%, rgba(247,255,84,0.16) 0%, transparent 45%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-[0.08]"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(45deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px)",
+            }}
+          />
+        </>
+      )}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 22% 12%, rgba(255,255,255,0.28) 0%, transparent 45%), radial-gradient(circle at 78% 92%, rgba(255,220,180,0.14) 0%, transparent 45%)",
-        }}
-      />
-      {/* Fine grain overlay */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 mix-blend-overlay opacity-[0.08]"
-        style={{
-          backgroundImage:
-            "repeating-linear-gradient(45deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px)",
-        }}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent"
       />
       <div className="relative z-10 flex w-full flex-col gap-2 p-4">
         <div className="flex items-center gap-2 text-[10px] tracking-[0.28em] text-white/60 uppercase">
@@ -58,7 +74,7 @@ export function PhotoTile({
     <div
       className={`relative flex items-end overflow-hidden rounded-md ${className}`}
       style={{
-        backgroundImage: `linear-gradient(160deg, ${color} 0%, #1a1220 100%)`,
+        backgroundImage: `linear-gradient(160deg, ${color} 0%, #171717 100%)`,
         aspectRatio: "3/4",
       }}
     >
@@ -90,7 +106,7 @@ export function VideoTile({
     <div
       className={`relative flex items-center justify-center overflow-hidden rounded-md ${className}`}
       style={{
-        backgroundImage: `linear-gradient(160deg, ${color} 0%, #0f0a15 100%)`,
+        backgroundImage: `linear-gradient(160deg, ${color} 0%, #101010 100%)`,
         aspectRatio: "16/9",
       }}
     >

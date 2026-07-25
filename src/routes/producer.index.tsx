@@ -19,23 +19,47 @@ function ProducerHome() {
 
   return (
     <div className="space-y-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-            Producer Console
+      <section className="grid overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-[var(--shadow-elev-2)] xl:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
+        <div className="flex flex-col justify-center p-6 md:p-10">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Producer Workspace
           </div>
-          <h1 className="mt-1 font-display text-3xl tracking-tight md:text-4xl">대시보드</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            공연별 지원자를 동일한 구조에서 확인할 수 있습니다.
+          <h1 className="mt-3 font-display text-3xl leading-tight md:text-5xl">
+            지원자 검토에서
+            <br />
+            다음 결정까지.
+          </h1>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground md:text-base">
+            공연별 지원 자료와 검토 상태를 한 구조로 정리해, 캐스팅 팀이 같은 기준으로 빠르게 판단할
+            수 있습니다.
           </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              to="/producer/create"
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-elev-1)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-elev-2)]"
+            >
+              + 새 공고 만들기
+            </Link>
+            <Link
+              to="/producer/applicants"
+              className="inline-flex items-center rounded-full border border-border-strong px-5 py-2.5 text-sm font-semibold transition hover:border-foreground hover:bg-secondary"
+            >
+              지원자 전체 보기
+            </Link>
+          </div>
         </div>
-        <Link
-          to="/producer/create"
-          className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground shadow-[var(--shadow-elev-1)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-elev-2)]"
-        >
-          + 새 공고 만들기
-        </Link>
-      </div>
+        <div className="relative min-h-64 overflow-hidden xl:min-h-[360px]">
+          <img
+            src="/images/editorial/dashboard-producer.jpg"
+            alt="오디션 현장에서 지원자를 평가하는 캐스팅 담당자"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" />
+          <div className="absolute bottom-5 right-5 rounded-full bg-gold px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-foreground">
+            Focus on the decision
+          </div>
+        </div>
+      </section>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat icon={Film} label="진행 중인 모집" value={`${activeShows.length}건`} />
@@ -45,7 +69,17 @@ function ProducerHome() {
       </div>
 
       <section>
-        <h2 className="text-base font-semibold">진행 중인 공연</h2>
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">진행 중인 공연</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              마감과 미확인 지원자를 기준으로 우선 검토하세요.
+            </p>
+          </div>
+          <Link to="/producer/shows" className="text-xs font-semibold hover:underline">
+            공연 전체 보기 →
+          </Link>
+        </div>
         <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {shows.map((show) => {
             const apps = applications.filter((a) => a.showId === show.id);
@@ -56,7 +90,13 @@ function ProducerHome() {
                 key={show.id}
                 className="flex overflow-hidden rounded-xl border border-border bg-card"
               >
-                <Poster title={show.title} color={show.posterColor} className="w-24 shrink-0" />
+                <Poster
+                  title={show.title}
+                  color={show.posterColor}
+                  image={show.posterImage}
+                  kind={show.kind}
+                  className="w-28 shrink-0"
+                />
                 <div className="flex flex-1 flex-col p-4">
                   <div className="flex items-center gap-2">
                     <span

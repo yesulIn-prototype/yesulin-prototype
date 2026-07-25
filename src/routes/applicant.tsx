@@ -76,7 +76,7 @@ function ApplicantLayout() {
       </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(35,20,30,0.08)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
         aria-label="모바일 주요 메뉴"
       >
         {nav.map((item) => {
@@ -105,7 +105,7 @@ function ApplicantLayout() {
 
 function BrandMark() {
   return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(58,26,44,0.22)]">
+    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
       <svg
         viewBox="0 0 24 24"
         className="h-4 w-4"
