@@ -41,6 +41,12 @@ type AnalyticsEventMap = {
     submission_item_count: number;
     additional_question_count: number;
   };
+  recruitment_created: {
+    show_id: string;
+    role_count: number;
+    submission_item_count: number;
+    additional_question_count: number;
+  };
   applicant_detail_viewed: {
     show_id: string;
     review_status: string;

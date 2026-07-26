@@ -261,6 +261,12 @@ function CreatePosting() {
     });
 
     if (publicationStatus === "게시됨") {
+      trackAnalyticsEvent("recruitment_created", {
+        show_id: showId,
+        role_count: validRoles.length,
+        submission_item_count: items.length,
+        additional_question_count: questions.filter((question) => question.question.trim()).length,
+      });
       navigate({ to: "/producer/shows/$id", params: { id: showId } });
       return;
     }

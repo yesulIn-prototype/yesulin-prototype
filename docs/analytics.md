@@ -35,6 +35,7 @@ GTM과 GA4 측정 ID는 공개 식별자지만, 환경별 설정이 섞이지 �
 | `application_submitted`         | 지원 데이터 저장 성공 후                     | `show_id`와 선택 자료 개수                           |
 | `recruitment_create_started`    | 공연사가 공고 작성 화면 진입                 | `entry_point`                                        |
 | `recruitment_previewed`         | 작성 중인 공고 미리보기 열기                 | 배역·제출 항목·질문 개수                             |
+| `recruitment_created`           | 공고 게시 데이터 저장 성공 후                | `show_id`와 배역·제출 항목·질문 개수                 |
 | `applicant_detail_viewed`       | 공연사가 지원자 상세 확인                    | `show_id`, `review_status`                           |
 | `review_status_changed`         | 지원자의 검토 상태 변경 성공                 | 이전/새 검토 상태                                    |
 
@@ -51,14 +52,14 @@ GTM과 GA4 측정 ID는 공개 식별자지만, 환경별 설정이 섞이지 �
 7. 사용자 정의 이벤트 트리거를 만들고 다음 정규식으로 이벤트를 제한합니다.
 
 ```regex
-^(page_view|role_selected|show_detail_viewed|application_started|application_step_completed|application_validation_failed|application_submitted|recruitment_create_started|recruitment_previewed|applicant_detail_viewed|review_status_changed)$
+^(page_view|role_selected|show_detail_viewed|application_started|application_step_completed|application_validation_failed|application_submitted|recruitment_create_started|recruitment_previewed|recruitment_created|applicant_detail_viewed|review_status_changed)$
 ```
 
 8. `Google 애널리틱스: GA4 이벤트` 태그를 만들고 이벤트 이름에 GTM 기본 변수 `{{Event}}`를 사용합니다.
 9. 표에 있는 파라미터를 데이터 영역 변수로 만들고 동일한 이름의 GA4 이벤트 파라미터로 전달합니다.
 10. GTM Preview와 GA4 DebugView에서 확인한 다음 컨테이너 버전을 게시합니다.
 
-`application_submitted`는 GA4에서 핵심 이벤트로 지정합니다. 현재 프로토타입에는 공고 등록 완료 기능이 없으므로 `recruitment_created` 이벤트는 아직 정의하지 않습니다.
+`application_submitted`와 `recruitment_created`는 GA4에서 핵심 이벤트로 지정합니다.
 
 ## 4. 프로토타입에서 운영으로 이동
 
@@ -67,3 +68,12 @@ GTM과 GA4 측정 ID는 공개 식별자지만, 환경별 설정이 섞이지 �
 - 배포 환경의 `VITE_GTM_ID`와 `VITE_ANALYTICS_ENVIRONMENT`만 운영 값으로 바꿉니다.
 - 실제 백엔드가 생기면 제출/상태 변경 이벤트는 버튼 클릭이 아니라 API 성공 응답 뒤에 발생시킵니다.
 - 이벤트 계약이 바뀌면 `analytics_schema_version`을 올리고 문서를 함께 수정합니다.
+
+## 5. Notion용 CSV 데이터소스
+
+팀이 함께 보는 이벤트 계약과 변경 이력의 관리 원본은 `docs/analytics-data/`의 CSV 파일입니다.
+
+- `analytics-events.csv`: 사용자 흐름 중심의 이벤트 정의와 구현·검증 상태
+- `analytics-change-log.csv`: 팀이 확인할 날짜순 변경 이력
+
+GTM 태그·트리거·변수의 기술 상세는 이 문서에서 관리합니다. Notion 가져오기와 권장 보기는 `docs/analytics-data/README.md`를 따릅니다.
