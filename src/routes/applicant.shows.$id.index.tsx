@@ -10,6 +10,7 @@ import {
   Coins,
   CheckCircle2,
   ChevronLeft,
+  ExternalLink,
 } from "lucide-react";
 
 export const Route = createFileRoute("/applicant/shows/$id/")({
@@ -40,6 +41,7 @@ function ShowDetail() {
           title={show.title}
           color={show.posterColor}
           image={show.posterImage}
+          imagePosition={show.posterPosition}
           kind={show.kind}
           className="h-56 lg:h-full"
         />
@@ -62,6 +64,32 @@ function ShowDetail() {
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{show.title}</h1>
           <div className="mt-1 text-sm text-muted-foreground">{show.producer}</div>
           <p className="mt-4 text-sm leading-relaxed text-foreground/80">{show.description}</p>
+          {(show.sourceUrl || show.producerUrl) && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
+              {show.sourceUrl && (
+                <a
+                  href={show.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                >
+                  {show.sourceLabel ?? "원문 공고 확인"}
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+              {show.producerUrl && (
+                <a
+                  href={show.producerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                >
+                  제작사 홈페이지
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <InfoRow icon={CalendarDays} label="지원 마감" value={show.deadline} />

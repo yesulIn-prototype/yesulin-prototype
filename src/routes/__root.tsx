@@ -73,14 +73,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "공연 지원 플랫폼" },
+      { title: "예술IN" },
       {
         name: "description",
         content:
           "한 번 등록한 프로필과 자료로 여러 공연에 지원하고, 공연사는 지원자를 한 화면에서 검토하는 통합 오디션 플랫폼",
       },
-      { name: "author", content: "공연 지원 플랫폼" },
-      { property: "og:title", content: "공연 지원 플랫폼" },
+      { name: "author", content: "예술IN" },
+      { property: "og:title", content: "예술IN" },
       {
         property: "og:description",
         content:
@@ -88,7 +88,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "공연 지원 플랫폼" },
+      { name: "twitter:title", content: "예술IN" },
       {
         name: "twitter:description",
         content:
@@ -113,7 +113,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg?v=2", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,

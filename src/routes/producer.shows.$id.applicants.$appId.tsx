@@ -45,6 +45,8 @@ function ApplicantDetail() {
   const roleName = app.roleIds.map((r) => show.roles.find((sr) => sr.id === r)?.name).join(", ");
   const careers = applicant.careers.filter((c) => app.selectedCareerIds.includes(c.id));
   const photos = applicant.photos.filter((p) => app.selectedPhotoIds.includes(p.id));
+  const profilePhoto =
+    photos.find((photo) => photo.image) ?? applicant.photos.find((photo) => photo.image);
   const videos = applicant.videos.filter((v) => app.selectedVideoIds.includes(v.id));
   const currentStatus = pendingStatus ?? app.reviewStatus;
   const statusDirty = pendingStatus !== null && pendingStatus !== app.reviewStatus;
@@ -85,9 +87,17 @@ function ApplicantDetail() {
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <div className="space-y-6">
           <div className="flex items-start gap-4 rounded-2xl border border-border bg-card p-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
-              {applicant.name.charAt(0)}
-            </div>
+            {profilePhoto?.image ? (
+              <img
+                src={profilePhoto.image}
+                alt={`${applicant.name} 프로필`}
+                className="h-20 w-16 shrink-0 rounded-xl object-cover object-top shadow-sm"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+                {applicant.name.charAt(0)}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-semibold">{applicant.name}</h1>
@@ -163,7 +173,7 @@ function ApplicantDetail() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {photos.map((p) => (
                 <div key={p.id}>
-                  <PhotoTile color={p.color} label={p.type} />
+                  <PhotoTile color={p.color} label={p.type} image={p.image} />
                   <div className="mt-1 truncate text-[11px] font-medium">{p.fileName}</div>
                   <div className="text-[10px] text-muted-foreground">{p.type}</div>
                 </div>

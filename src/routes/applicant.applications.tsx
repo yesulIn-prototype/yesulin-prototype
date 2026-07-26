@@ -54,7 +54,8 @@ function MyApplications() {
           <option value="지원 완료">지원 완료</option>
           <option value="서류 확인">서류 확인</option>
           <option value="오디션 예정">오디션 예정</option>
-          <option value="결과 발표">결과 발표</option>
+          <option value="합격">합격</option>
+          <option value="불합격">불합격</option>
         </select>
         <select
           value={sort}
@@ -102,8 +103,8 @@ function MyApplications() {
                   </div>
                 </div>
                 <Link
-                  to="/applicant/shows/$id"
-                  params={{ id: show.id }}
+                  to="/applicant/applications/$appId"
+                  params={{ appId: app.id }}
                   className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
                 >
                   제출한 지원서 보기

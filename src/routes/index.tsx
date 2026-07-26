@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Building2, CalendarCheck2, Check, Files, Sparkles, Users } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "지원 준비는 한 번, 무대의 기회는 계속 · 공연 지원 플랫폼" },
+      { title: "지원 준비는 한 번, 무대의 기회는 계속 · 예술IN" },
       {
         name: "description",
         content:
@@ -12,7 +13,7 @@ export const Route = createFileRoute("/")({
       },
       {
         property: "og:title",
-        content: "지원 준비는 한 번, 무대의 기회는 계속 · 공연 지원 플랫폼",
+        content: "지원 준비는 한 번, 무대의 기회는 계속 · 예술IN",
       },
       {
         property: "og:description",
@@ -32,22 +33,22 @@ function RoleSelect() {
           <Link to="/" className="flex items-center gap-3">
             <BrandMark />
             <div className="leading-none">
-              <div className="text-sm font-semibold tracking-tight">공연 지원 플랫폼</div>
+              <div className="text-lg font-bold tracking-[-0.04em]">예술IN</div>
               <div className="mt-1 hidden text-[9px] font-medium uppercase tracking-[0.22em] text-muted-foreground sm:block">
-                Audition Workspace
+                Audition Platform
               </div>
             </div>
           </Link>
           <div className="flex items-center gap-2">
             <a
               href="#workflow"
-              className="hidden px-3 text-xs font-medium text-muted-foreground transition hover:text-foreground md:inline-flex"
+              className="hidden min-h-10 items-center rounded-full border border-border-strong bg-background px-4 py-2 text-xs font-semibold text-foreground transition hover:border-foreground hover:bg-secondary md:inline-flex"
             >
               이용 흐름
             </a>
             <Link
               to="/applicant"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:-translate-y-0.5"
+              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition hover:-translate-y-0.5"
             >
               화면 둘러보기
               <ArrowRight className="h-3.5 w-3.5" />
@@ -57,16 +58,15 @@ function RoleSelect() {
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-7xl gap-10 px-5 py-10 md:px-8 md:py-16 lg:grid-cols-[minmax(0,0.88fr)_minmax(500px,1.12fr)] lg:items-center lg:gap-16 lg:py-20">
+        <section className="mx-auto grid max-w-7xl gap-10 px-5 py-10 md:px-8 md:py-16 xl:grid-cols-[minmax(0,1.35fr)_minmax(420px,0.65fr)] xl:items-center xl:gap-12 xl:py-20">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full bg-gold px-3 py-1.5 text-[11px] font-semibold text-gold-foreground">
               <Sparkles className="h-3.5 w-3.5" />
               공연 오디션 통합 워크스페이스
             </div>
-            <h1 className="mt-6 font-display text-[clamp(2.8rem,6vw,5.5rem)] leading-[0.98] tracking-[-0.055em] text-foreground">
-              지원 준비는 한 번,
-              <br />
-              무대의 기회는 계속.
+            <h1 className="mt-6 font-display text-[clamp(2rem,8vw,4rem)] leading-[0.98] tracking-[-0.055em] text-foreground xl:whitespace-nowrap xl:text-[clamp(3rem,3.8vw,3.5rem)]">
+              <span className="block whitespace-nowrap xl:inline">지원 준비는 한 번,</span>{" "}
+              <span className="block whitespace-nowrap xl:inline">무대의 기회는 계속.</span>
             </h1>
             <p className="mt-7 max-w-xl text-base leading-7 text-muted-foreground md:text-lg md:leading-8">
               지원자는 프로필과 자료를 반복해서 준비하지 않고, 공연사는 흩어진 지원 정보를 동일한
@@ -122,19 +122,19 @@ function RoleSelect() {
         <section className="border-y border-border bg-surface">
           <div className="mx-auto grid max-w-7xl divide-y divide-border px-5 sm:grid-cols-3 sm:divide-x sm:divide-y-0 md:px-8">
             <ValueStat
-              value="1회"
-              label="프로필·자료 등록"
-              description="공고마다 반복 입력하지 않습니다."
+              value="한 번에"
+              label="지원 준비 완성"
+              description="프로필과 자료를 저장하고 모든 공고에 활용하세요."
             />
             <ValueStat
-              value="한 화면"
-              label="지원 현황·일정 관리"
-              description="다음 행동을 놓치지 않습니다."
+              value="한눈에"
+              label="기회와 일정 확인"
+              description="마감부터 오디션까지 다음 일정을 바로 확인하세요."
             />
             <ValueStat
-              value="동일 구조"
-              label="지원자 검토"
-              description="비교와 판단에 집중합니다."
+              value="한 흐름으로"
+              label="검토와 결정"
+              description="지원 자료와 평가를 오가며 더 빠르게 결정하세요."
             />
           </div>
         </section>
@@ -229,7 +229,7 @@ function RoleSelect() {
               </div>
             </div>
             <p className="mt-12 text-xs text-white/45">
-              현재 프로토타입에서는 회원가입·실제 파일 업로드·이메일 발송을 제공하지 않습니다.
+              현재 프로토타입에서는 회원가입·서버 계정 동기화·이메일 발송을 제공하지 않습니다.
             </p>
           </div>
         </section>
@@ -254,24 +254,6 @@ function ValueStat({
         <span className="text-sm font-semibold">{label}</span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
-        <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
-      </svg>
     </div>
   );
 }

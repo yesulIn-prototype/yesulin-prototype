@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { ReviewBadge } from "@/components/status-badge";
 import { useStore } from "@/lib/store";
-import { Eye, Search, Users } from "lucide-react";
+import { ArrowRight, Search, Users } from "lucide-react";
 
 export const Route = createFileRoute("/producer/applicants")({
   component: AllApplicants,
@@ -11,6 +11,7 @@ export const Route = createFileRoute("/producer/applicants")({
 function AllApplicants() {
   const applications = useStore((s) => s.applications);
   const shows = useStore((s) => s.shows);
+  const getApplicantById = useStore((s) => s.getApplicantById);
   const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState("전체");
   const [statusFilter, setStatusFilter] = useState("전체");
@@ -86,93 +87,64 @@ function AllApplicants() {
           <p className="mt-1 text-sm text-muted-foreground">검색어 또는 필터를 변경해 보세요.</p>
         </div>
       ) : (
-        <>
-          <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card md:block">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-surface text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 text-left font-medium">지원자</th>
-                  <th className="px-4 py-3 text-left font-medium">공연</th>
-                  <th className="px-4 py-3 text-left font-medium">지원 배역</th>
-                  <th className="px-4 py-3 text-left font-medium">지원 시간</th>
-                  <th className="px-4 py-3 text-left font-medium">검토 상태</th>
-                  <th className="px-4 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {list.map((application) => {
-                  const show = shows.find((item) => item.id === application.showId);
-                  const roleName = application.roleIds
-                    .map((roleId) => show?.roles.find((role) => role.id === roleId)?.name)
-                    .join(", ");
-                  return (
-                    <tr key={application.id} className="hover:bg-surface/70">
-                      <td className="px-4 py-3 font-medium">{application.applicantName}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{show?.title}</td>
-                      <td className="px-4 py-3">{roleName}</td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
-                        {application.submittedAt}
-                      </td>
-                      <td className="px-4 py-3">
-                        <ReviewBadge status={application.reviewStatus} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {show && (
-                          <Link
-                            to="/producer/shows/$id/applicants/$appId"
-                            params={{ id: show.id, appId: application.id }}
-                            className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium"
-                          >
-                            <Eye className="h-3.5 w-3.5" /> 상세 보기
-                          </Link>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {list.map((application) => {
+            const show = shows.find((item) => item.id === application.showId);
+            const applicant = getApplicantById(application.applicantId);
+            const photo =
+              applicant?.photos.find((item) => item.isDefault && item.image) ??
+              applicant?.photos.find((item) => item.image);
+            const roleName = application.roleIds
+              .map((roleId) => show?.roles.find((role) => role.id === roleId)?.name)
+              .join(", ");
 
-          <div className="grid gap-3 md:hidden">
-            {list.map((application) => {
-              const show = shows.find((item) => item.id === application.showId);
-              const roleName = application.roleIds
-                .map((roleId) => show?.roles.find((role) => role.id === roleId)?.name)
-                .join(", ");
-              return (
-                <article
-                  key={application.id}
-                  className="rounded-2xl border border-border bg-card p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold">{application.applicantName}</h2>
-                      <div className="mt-1 text-xs text-muted-foreground">{show?.title}</div>
+            if (!show) return null;
+            return (
+              <Link
+                key={application.id}
+                to="/producer/shows/$id/applicants/$appId"
+                params={{ id: show.id, appId: application.id }}
+                className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-[var(--shadow-elev-2)]"
+              >
+                <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+                  {photo?.image ? (
+                    <img
+                      src={photo.image}
+                      alt={`${application.applicantName} 지원자 프로필`}
+                      loading="lazy"
+                      className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-5xl font-semibold text-muted-foreground/40">
+                      {application.applicantName.slice(0, 1)}
                     </div>
+                  )}
+                  <div className="absolute right-3 top-3">
                     <ReviewBadge status={application.reviewStatus} />
                   </div>
-                  <div className="mt-3 rounded-lg bg-surface px-3 py-2 text-sm">
+                </div>
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-semibold">{application.applicantName}</h2>
+                      <p className="mt-0.5 truncate text-sm text-muted-foreground">{show.title}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-xl bg-surface px-3 py-2.5 text-sm">
                     <span className="text-muted-foreground">지원 배역 </span>
                     <strong>{roleName}</strong>
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">
-                    {application.submittedAt}
+                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <span>{application.submittedAt}</span>
+                    <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                      상세 보기 <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
                   </div>
-                  {show && (
-                    <Link
-                      to="/producer/shows/$id/applicants/$appId"
-                      params={{ id: show.id, appId: application.id }}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium"
-                    >
-                      <Eye className="h-3.5 w-3.5" /> 지원서 상세 보기
-                    </Link>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        </>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       )}
     </div>
   );

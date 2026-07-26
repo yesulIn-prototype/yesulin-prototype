@@ -32,7 +32,9 @@ function ShowsList() {
                 title={show.title}
                 color={show.posterColor}
                 image={show.posterImage}
+                imagePosition={show.posterPosition}
                 kind={show.kind}
+                showText={false}
                 className="w-28 shrink-0"
               />
               <div className="flex flex-1 flex-col p-4">

@@ -14,7 +14,11 @@ const applyMap: Record<ApplyStatus, BadgeStyle> = {
     dot: "bg-primary/70",
   },
   "오디션 예정": { chip: "bg-gold/15 text-gold-foreground border-gold/35", dot: "bg-gold" },
-  "결과 발표": { chip: "bg-primary/10 text-primary border-primary/25", dot: "bg-primary" },
+  합격: { chip: "bg-primary text-primary-foreground border-primary", dot: "bg-primary-foreground" },
+  불합격: {
+    chip: "bg-destructive/10 text-destructive border-destructive/25",
+    dot: "bg-destructive",
+  },
 };
 
 const reviewMap: Record<ReviewStatus, BadgeStyle> = {

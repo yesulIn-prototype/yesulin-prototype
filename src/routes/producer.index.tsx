@@ -1,240 +1,225 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useStore, daysUntil } from "@/lib/store";
+import { ArrowRight, CalendarClock, FilePlus2, Star, Users } from "lucide-react";
 import { Poster } from "@/components/poster";
 import { ReviewBadge } from "@/components/status-badge";
-import { Film, Users, Eye, Mic2 } from "lucide-react";
+import {
+  Metric,
+  PageHeader,
+  Surface,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/components/workspace-ui";
+import { daysUntil, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/producer/")({
   component: ProducerHome,
 });
 
 function ProducerHome() {
-  const shows = useStore((s) => s.shows);
-  const applications = useStore((s) => s.applications);
-
-  const activeShows = shows.filter((s) => s.status === "모집 중");
-  const totalApplicants = applications.length;
-  const unreviewed = applications.filter((a) => a.reviewStatus === "미확인").length;
-  const auditionCount = applications.filter((a) => a.reviewStatus === "오디션 대상").length;
+  const shows = useStore((state) => state.shows);
+  const applications = useStore((state) => state.applications);
+  const getApplicantById = useStore((state) => state.getApplicantById);
+  const activeShows = shows.filter(
+    (show) => show.status === "모집 중" && show.publicationStatus !== "임시 저장",
+  );
+  const uniqueApplicants = new Set(applications.map((application) => application.applicantId)).size;
+  const unreviewed = applications.filter((application) => application.reviewStatus === "미확인");
+  const shortlisted = applications.filter((application) => application.shortlisted);
 
   return (
-    <div className="space-y-10">
-      <section className="grid overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-[var(--shadow-elev-2)] xl:grid-cols-[minmax(0,0.9fr)_minmax(480px,1.1fr)]">
-        <div className="flex flex-col justify-center p-6 md:p-10">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            Producer Workspace
-          </div>
-          <h1 className="mt-3 font-display text-3xl leading-tight md:text-5xl">
-            지원자 검토에서
-            <br />
-            다음 결정까지.
-          </h1>
-          <p className="mt-4 max-w-lg text-sm leading-6 text-muted-foreground md:text-base">
-            공연별 지원 자료와 검토 상태를 한 구조로 정리해, 캐스팅 팀이 같은 기준으로 빠르게 판단할
-            수 있습니다.
-          </p>
-          <div className="mt-7 flex flex-wrap gap-3">
-            <Link
-              to="/producer/create"
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-elev-1)] transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-elev-2)]"
-            >
-              + 새 공고 만들기
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Casting workspace"
+        title="오늘 결정이 필요한 지원자부터 확인하세요."
+        description="미확인 지원서와 마감이 가까운 공고를 우선순위에 맞춰 정리했습니다."
+        actions={
+          <div className="flex gap-2">
+            <Link to="/producer/applicants" className={secondaryButtonClass}>
+              <Users className="h-4 w-4" /> 전체 지원서
             </Link>
-            <Link
-              to="/producer/applicants"
-              className="inline-flex items-center rounded-full border border-border-strong px-5 py-2.5 text-sm font-semibold transition hover:border-foreground hover:bg-secondary"
-            >
-              지원자 전체 보기
+            <Link to="/producer/create" className={primaryButtonClass}>
+              <FilePlus2 className="h-4 w-4" /> 새 공고
             </Link>
           </div>
-        </div>
-        <div className="relative min-h-64 overflow-hidden xl:min-h-[360px]">
-          <img
-            src="/images/editorial/dashboard-producer.jpg"
-            alt="오디션 현장에서 지원자를 평가하는 캐스팅 담당자"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/20 via-transparent to-transparent" />
-          <div className="absolute bottom-5 right-5 rounded-full bg-gold px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold-foreground">
-            Focus on the decision
-          </div>
-        </div>
-      </section>
+        }
+      />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat icon={Film} label="진행 중인 모집" value={`${activeShows.length}건`} />
-        <Stat icon={Users} label="전체 지원자" value={`${totalApplicants}명`} />
-        <Stat icon={Eye} label="미확인 지원자" value={`${unreviewed}명`} accent="warning" />
-        <Stat icon={Mic2} label="예정된 오디션 대상" value={`${auditionCount}명`} accent="gold" />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Metric label="진행 중인 모집" value={`${activeShows.length}건`} />
+        <Metric label="고유 지원자" value={`${uniqueApplicants}명`} />
+        <Metric
+          label="미확인 지원서"
+          value={`${unreviewed.length}건`}
+          tone={unreviewed.length > 0 ? "warning" : "default"}
+        />
+        <Metric label="숏리스트" value={`${shortlisted.length}명`} tone="success" />
       </div>
 
-      <section>
-        <div className="flex items-end justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold">진행 중인 공연</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              마감과 미확인 지원자를 기준으로 우선 검토하세요.
-            </p>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <Surface
+          title="검토 대기"
+          description="아직 확인하지 않은 최근 지원서입니다."
+          action={
+            <Link to="/producer/applicants" className="text-sm font-semibold hover:underline">
+              모두 보기 →
+            </Link>
+          }
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            {unreviewed.slice(0, 4).map((application) => {
+              const show = shows.find((item) => item.id === application.showId);
+              const applicant = getApplicantById(application.applicantId);
+              const photo =
+                applicant?.photos.find((item) => item.isDefault && item.image) ??
+                applicant?.photos.find((item) => item.image);
+              return (
+                <Link
+                  key={application.id}
+                  to="/producer/shows/$id/applicants/$appId"
+                  params={{ id: application.showId, appId: application.id }}
+                  className="group overflow-hidden rounded-xl border border-border bg-card hover:border-primary"
+                >
+                  <span className="relative block aspect-[16/10] overflow-hidden bg-secondary">
+                    {photo?.image ? (
+                      <img
+                        src={photo.image}
+                        alt={`${application.applicantName} 지원자 프로필`}
+                        loading="lazy"
+                        className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center text-4xl font-semibold text-muted-foreground/40">
+                        {application.applicantName.slice(0, 1)}
+                      </span>
+                    )}
+                    <span className="absolute left-3 top-3 rounded-full bg-warning px-2.5 py-1 text-[11px] font-semibold text-warning-foreground shadow-sm">
+                      미확인
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-3 p-4">
+                    <span className="min-w-0 flex-1">
+                      <strong className="block">{application.applicantName}</strong>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">
+                        {show?.title} · {application.submittedAt}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0" />
+                  </span>
+                </Link>
+              );
+            })}
+            {unreviewed.length === 0 && (
+              <div className="col-span-full rounded-xl bg-secondary/60 p-6 text-center text-sm text-muted-foreground">
+                미확인 지원서가 없습니다.
+              </div>
+            )}
           </div>
-          <Link to="/producer/shows" className="text-xs font-semibold hover:underline">
-            공연 전체 보기 →
+        </Surface>
+
+        <Surface title="모집 마감 관리" description="마감이 가까운 공고부터 확인합니다.">
+          <div className="space-y-3">
+            {activeShows
+              .slice()
+              .sort((a, b) => daysUntil(a.deadline) - daysUntil(b.deadline))
+              .slice(0, 4)
+              .map((show) => {
+                const count = applications.filter(
+                  (application) => application.showId === show.id,
+                ).length;
+                const dDay = daysUntil(show.deadline);
+                return (
+                  <Link
+                    key={show.id}
+                    to="/producer/shows/$id"
+                    params={{ id: show.id }}
+                    className="block rounded-xl border border-border p-4 hover:border-primary"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold">{show.title}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">지원서 {count}건</div>
+                      </div>
+                      <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground">
+                        {dDay < 0 ? "마감" : dDay === 0 ? "오늘" : `D-${dDay}`}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+          </div>
+        </Surface>
+      </div>
+
+      <Surface
+        title="진행 중인 공고"
+        description="게시된 모집 공고와 지원 현황입니다."
+        action={
+          <Link to="/producer/shows" className="text-sm font-semibold hover:underline">
+            공고 전체 보기 →
           </Link>
-        </div>
-        <div className="mt-3 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {shows.map((show) => {
-            const apps = applications.filter((a) => a.showId === show.id);
-            const unr = apps.filter((a) => a.reviewStatus === "미확인").length;
-            const dLeft = daysUntil(show.deadline);
+        }
+      >
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {activeShows.map((show) => {
+            const showApplications = applications.filter(
+              (application) => application.showId === show.id,
+            );
+            const showUnreviewed = showApplications.filter(
+              (application) => application.reviewStatus === "미확인",
+            ).length;
             return (
-              <div
+              <Link
                 key={show.id}
-                className="flex overflow-hidden rounded-xl border border-border bg-card"
+                to="/producer/shows/$id"
+                params={{ id: show.id }}
+                className="flex overflow-hidden rounded-xl border border-border hover:border-primary"
               >
                 <Poster
                   title={show.title}
                   color={show.posterColor}
                   image={show.posterImage}
+                  imagePosition={show.posterPosition}
                   kind={show.kind}
-                  className="w-28 shrink-0"
+                  showText={false}
+                  className="w-24 shrink-0"
                 />
-                <div className="flex flex-1 flex-col p-4">
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1 p-4">
+                  <div className="truncate font-semibold">{show.title}</div>
+                  <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
+                    <span>지원 {showApplications.length}</span>
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                        show.status === "모집 중"
-                          ? "bg-success/15 text-success"
-                          : "bg-muted text-muted-foreground"
-                      }`}
+                      className={showUnreviewed > 0 ? "font-semibold text-warning-foreground" : ""}
                     >
-                      {show.status}
-                    </span>
-                    {show.status === "모집 중" && (
-                      <span className="text-[10px] text-muted-foreground">
-                        D-{dLeft} · 마감 {show.deadline}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-1.5 truncate text-base font-semibold">{show.title}</div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">
-                    배역: {show.roles.map((r) => r.name).join(", ")}
-                  </div>
-                  <div className="mt-3 flex items-center gap-3 text-xs">
-                    <span className="text-muted-foreground">
-                      지원자 <strong className="text-foreground">{apps.length}</strong>명
-                    </span>
-                    <span className="text-warning-foreground">
-                      · 미확인 <strong>{unr}</strong>명
+                      미확인 {showUnreviewed}
                     </span>
                   </div>
-                  <div className="mt-auto pt-3">
-                    <Link
-                      to="/producer/shows/$id"
-                      params={{ id: show.id }}
-                      className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
-                    >
-                      지원자 관리
-                    </Link>
+                  <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarClock className="h-3.5 w-3.5" /> {show.deadline}
                   </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-base font-semibold">최근 지원자</h2>
-        <div className="mt-3 hidden overflow-hidden rounded-xl border border-border bg-card md:block">
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/60 text-xs">
-              <tr>
-                <th className="px-4 py-2 text-left">지원자</th>
-                <th className="px-4 py-2 text-left">지원 공연</th>
-                <th className="px-4 py-2 text-left">지원 배역</th>
-                <th className="px-4 py-2 text-left">지원 시간</th>
-                <th className="px-4 py-2 text-left">검토 상태</th>
-              </tr>
-            </thead>
-            <tbody>
-              {applications.slice(0, 6).map((a) => {
-                const show = shows.find((s) => s.id === a.showId);
-                const roleName = a.roleIds
-                  .map((r) => show?.roles.find((sr) => sr.id === r)?.name)
-                  .join(", ");
-                return (
-                  <tr key={a.id} className="border-t border-border hover:bg-secondary/40">
-                    <td className="px-4 py-2.5 font-medium">{a.applicantName}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{show?.title}</td>
-                    <td className="px-4 py-2.5">{roleName}</td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground">{a.submittedAt}</td>
-                    <td className="px-4 py-2.5">
-                      <ReviewBadge status={a.reviewStatus} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        <div className="mt-3 grid gap-3 md:hidden">
-          {applications.slice(0, 6).map((application) => {
-            const show = shows.find((item) => item.id === application.showId);
-            const roleName = application.roleIds
-              .map((roleId) => show?.roles.find((role) => role.id === roleId)?.name)
-              .join(", ");
-            return (
-              <Link
-                key={application.id}
-                to="/producer/shows/$id/applicants/$appId"
-                params={{ id: application.showId, appId: application.id }}
-                className="rounded-xl border border-border bg-card p-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-semibold">{application.applicantName}</div>
-                    <div className="mt-1 text-xs text-muted-foreground">{show?.title}</div>
-                  </div>
-                  <ReviewBadge status={application.reviewStatus} />
-                </div>
-                <div className="mt-3 text-sm">
-                  <span className="text-muted-foreground">지원 배역 </span>
-                  <strong>{roleName}</strong>
                 </div>
               </Link>
             );
           })}
         </div>
-      </section>
-    </div>
-  );
-}
+      </Surface>
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  accent?: "gold" | "warning";
-}) {
-  const color =
-    accent === "gold"
-      ? "bg-gold/15 text-gold-foreground"
-      : accent === "warning"
-        ? "bg-warning/15 text-warning-foreground"
-        : "bg-primary/10 text-primary";
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
-      <div className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${color}`}>
-        <Icon className="h-4 w-4" />
-      </div>
-      <div className="mt-3 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 font-display text-2xl tabular-nums">{value}</div>
+      {shortlisted.length > 0 && (
+        <Surface title="숏리스트">
+          <div className="flex flex-wrap gap-2">
+            {shortlisted.map((application) => (
+              <Link
+                key={application.id}
+                to="/producer/shows/$id/applicants/$appId"
+                params={{ id: application.showId, appId: application.id }}
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border px-4 text-sm font-semibold"
+              >
+                <Star className="h-4 w-4 fill-gold text-gold" /> {application.applicantName}
+                <ReviewBadge status={application.reviewStatus} />
+              </Link>
+            ))}
+          </div>
+        </Surface>
+      )}
     </div>
   );
 }
