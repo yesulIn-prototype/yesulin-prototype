@@ -1,431 +1,513 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
-import { useStore, daysUntil, findShow, findRole } from "@/lib/store";
-import { ApplyBadge } from "@/components/status-badge";
-import { Poster } from "@/components/poster";
+import { useMemo, useState } from "react";
 import {
-  Search,
   ArrowRight,
+  Bookmark,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
+  Clock3,
+  FilePenLine,
+  FolderOpen,
+  Plus,
+  Search,
+  Trash2,
 } from "lucide-react";
+import { ApplyBadge } from "@/components/status-badge";
+import {
+  Metric,
+  PageHeader,
+  Surface,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from "@/components/workspace-ui";
+import { daysUntil, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/applicant/")({
   component: ApplicantHome,
 });
 
-type EventKind = "지원 마감" | "오디션" | "연습" | "공연" | "결과 발표";
-type CalEvent = { kind: EventKind; date: string; showTitle: string; role: string; showId: string };
-
-const KIND_META: Record<EventKind, { color: string; dot: string }> = {
-  "지원 마감": { color: "bg-destructive/10 text-destructive", dot: "bg-destructive" },
-  오디션: { color: "bg-gold/20 text-gold-foreground", dot: "bg-gold" },
-  연습: { color: "bg-secondary text-secondary-foreground", dot: "bg-muted-foreground" },
-  공연: { color: "bg-success/15 text-success", dot: "bg-success" },
-  "결과 발표": { color: "bg-primary/10 text-primary", dot: "bg-primary" },
+type CalendarEvent = {
+  id: string;
+  date: string;
+  label: string;
+  title: string;
+  href?: "/applicant/shows/$id" | "/applicant/applications/$appId";
+  params?: { id: string } | { appId: string };
+  tone: "favorite" | "audition" | "manual";
+  manualId?: string;
 };
 
-// "YYYY.MM.DD" -> Date
-function parseDate(s: string) {
-  const [y, m, d] = s.split(".").map((n) => parseInt(n, 10));
-  return new Date(y, m - 1, d);
-}
-function keyOf(d: Date) {
-  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-}
+const toDateKey = (value: string) => {
+  const match = value.match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/);
+  if (!match) return "";
+  return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
+};
+
+const dateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
 
 function ApplicantHome() {
-  const applicant = useStore((s) => s.applicant);
-  const allApps = useStore((s) => s.applications);
-  const applications = allApps.filter((a) => a.applicantId === "me");
-  const shows = useStore((s) => s.shows);
+  const applicant = useStore((state) => state.applicant);
+  const shows = useStore((state) => state.shows);
+  const allApplications = useStore((state) => state.applications);
+  const favoriteShowIds = useStore((state) => state.favoriteShowIds);
+  const manualSchedules = useStore((state) => state.manualSchedules);
+  const applications = allApplications.filter((application) => application.applicantId === "me");
 
-  const reviewing = applications.filter(
-    (a) => a.reviewStatus === "검토 중" || a.reviewStatus === "미확인",
-  ).length;
-  const audition = applications.filter(
-    (a) => a.applyStatus === "오디션 예정" || a.reviewStatus === "오디션 대상",
-  ).length;
-  const results = applications.filter((a) => a.applyStatus === "결과 발표").length;
-
-  // Aggregate events from my applications
-  const events: CalEvent[] = useMemo(() => {
-    const list: CalEvent[] = [];
-    for (const app of applications) {
-      const show = findShow(app.showId);
-      if (!show) continue;
-      const roleNames = app.roleIds
-        .map((rid) => findRole(show, rid)?.name)
-        .filter(Boolean)
-        .join(", ");
-      list.push({
-        kind: "지원 마감",
-        date: show.deadline,
-        showTitle: show.title,
-        role: roleNames,
-        showId: show.id,
-      });
-      list.push({
-        kind: "오디션",
-        date: show.auditionDate,
-        showTitle: show.title,
-        role: roleNames,
-        showId: show.id,
-      });
-      const rStart = show.rehearsalPeriod.split(" – ")[0];
-      list.push({
-        kind: "연습",
-        date: rStart,
-        showTitle: show.title,
-        role: roleNames,
-        showId: show.id,
-      });
-      const sStart = show.showPeriod.split(" – ")[0];
-      list.push({
-        kind: "공연",
-        date: sStart,
-        showTitle: show.title,
-        role: roleNames,
-        showId: show.id,
-      });
-    }
-    // Also include deadlines of open shows I've NOT applied to (soon-closing)
-    for (const show of shows) {
-      if (show.status !== "모집 중") continue;
-      if (applications.some((a) => a.showId === show.id)) continue;
-      list.push({
-        kind: "지원 마감",
-        date: show.deadline,
-        showTitle: show.title,
-        role: "미지원",
-        showId: show.id,
-      });
-    }
-    return list;
-  }, [applications, shows]);
-
-  const today = new Date(2026, 6, 14);
-  const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selected, setSelected] = useState<string | null>(keyOf(today));
-
-  const eventsByDay = useMemo(() => {
-    const map: Record<string, CalEvent[]> = {};
-    for (const e of events) (map[e.date] ??= []).push(e);
-    return map;
-  }, [events]);
-
-  const monthDays = useMemo(() => {
-    const first = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
-    const startWeekday = first.getDay();
-    const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
-    const cells: Array<{ date: Date | null; key: string | null }> = [];
-    for (let i = 0; i < startWeekday; i++) cells.push({ date: null, key: null });
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dt = new Date(cursor.getFullYear(), cursor.getMonth(), d);
-      cells.push({ date: dt, key: keyOf(dt) });
-    }
-    while (cells.length % 7 !== 0) cells.push({ date: null, key: null });
-    return cells;
-  }, [cursor]);
-
-  const selectedEvents = selected ? (eventsByDay[selected] ?? []) : [];
-  const recent = applications.slice(0, 3);
+  const openShows = shows
+    .filter((show) => show.status === "모집 중" && daysUntil(show.deadline) >= 0)
+    .sort((a, b) => daysUntil(a.deadline) - daysUntil(b.deadline));
+  const upcomingAuditions = applications
+    .filter((application) => application.applyStatus === "오디션 예정")
+    .map((application) => ({
+      application,
+      show: shows.find((show) => show.id === application.showId),
+    }))
+    .filter((item) => item.show && daysUntil(item.show.auditionDate) >= 0);
+  const profileReady =
+    Boolean(applicant.name && applicant.phone && applicant.email) &&
+    applicant.photos.length > 0 &&
+    applicant.videos.length > 0;
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const favoriteEvents = shows
+      .filter((show) => favoriteShowIds.includes(show.id))
+      .map((show) => ({
+        id: `favorite-${show.id}`,
+        date: toDateKey(show.deadline),
+        label: "즐겨찾기 마감",
+        title: show.title,
+        href: "/applicant/shows/$id" as const,
+        params: { id: show.id },
+        tone: "favorite" as const,
+      }));
+    const auditionEvents = upcomingAuditions
+      .filter(({ show }) => show)
+      .map(({ application, show }) => ({
+        id: `audition-${application.id}`,
+        date: toDateKey(show?.auditionDate ?? ""),
+        label: "오디션",
+        title: show?.title ?? "오디션 일정",
+        href: "/applicant/applications/$appId" as const,
+        params: { appId: application.id },
+        tone: "audition" as const,
+      }));
+    const manualEvents = manualSchedules.map((schedule) => ({
+      id: `manual-${schedule.id}`,
+      date: schedule.date,
+      label: schedule.note || "직접 추가한 일정",
+      title: schedule.title,
+      tone: "manual" as const,
+      manualId: schedule.id,
+    }));
+    return [...favoriteEvents, ...auditionEvents, ...manualEvents].filter((event) => event.date);
+  }, [favoriteShowIds, manualSchedules, shows, upcomingAuditions]);
 
   return (
-    <div className="space-y-10">
-      {/* Hero: next action first, supporting image and status second */}
-      <section className="grid overflow-hidden rounded-[1.5rem] bg-primary text-primary-foreground shadow-[var(--shadow-elev-2)] lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-        <div className="relative flex flex-col justify-between p-6 md:p-10 lg:min-h-[390px]">
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] opacity-70">
-              <span className="inline-block h-px w-6 bg-gold/70" />
-              오늘의 워크스페이스
-            </div>
-            <h1 className="mt-3 font-display text-3xl leading-[1.1] md:text-5xl">
-              안녕하세요, <span className="text-gold">{applicant.name}</span> 님
-            </h1>
-            <p className="mt-3 max-w-lg text-sm leading-relaxed opacity-80 md:text-base">
-              오늘도 잘 맞는 공연을 찾아 지원해 보세요. 한 번 등록한 자료는 계속 재사용할 수
-              있습니다.
-            </p>
-            <Link
-              to="/applicant/shows"
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-gold px-6 py-3 text-sm font-semibold text-gold-foreground shadow-[0_10px_30px_-8px_rgba(199,210,40,0.38)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-10px_rgba(199,210,40,0.5)]"
-            >
-              <Search className="h-4 w-4" /> 새로운 공연 찾기
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-          <div className="mt-9 grid grid-cols-3 gap-2">
-            <MiniStat label="검토 중" value={reviewing} />
-            <MiniStat label="오디션 예정" value={audition} />
-            <MiniStat label="결과 발표" value={results} />
-          </div>
-        </div>
-        <div className="relative min-h-64 overflow-hidden lg:min-h-full">
-          <img
-            src="/images/editorial/dashboard-applicant.jpg"
-            alt="연습실에서 안무를 연습하는 배우"
-            className="absolute inset-0 h-full w-full object-cover"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent lg:from-black/55" />
-          <div className="absolute bottom-5 right-5 rounded-full border border-white/20 bg-black/35 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-white/80 backdrop-blur">
-            Keep moving forward
-          </div>
-        </div>
-      </section>
-
-      {/* Main: calendar + my applications */}
-      <section className="grid gap-6 lg:grid-cols-5">
-        {/* Calendar */}
-        <div className="lg:col-span-3">
-          <div className="rounded-2xl border border-border bg-card">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold">일정 캘린더</h2>
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() =>
-                    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))
-                  }
-                  className="rounded-md p-1.5 hover:bg-secondary"
-                  aria-label="이전 달"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <div className="min-w-[92px] text-center text-sm font-medium">
-                  {cursor.getFullYear()}년 {cursor.getMonth() + 1}월
-                </div>
-                <button
-                  onClick={() =>
-                    setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))
-                  }
-                  className="rounded-md p-1.5 hover:bg-secondary"
-                  aria-label="다음 달"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="px-3 py-3">
-              <div className="grid grid-cols-7 text-center text-[11px] font-medium text-muted-foreground">
-                {["일", "월", "화", "수", "목", "금", "토"].map((d) => (
-                  <div key={d} className="py-1">
-                    {d}
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-7 gap-1">
-                {monthDays.map((c, i) => {
-                  if (!c.date) return <div key={i} className="h-14 rounded-md" />;
-                  const isToday = keyOf(today) === c.key;
-                  const isSelected = selected === c.key;
-                  const dayEvents = eventsByDay[c.key!] ?? [];
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => setSelected(c.key)}
-                      className={`relative flex h-14 flex-col items-start rounded-md border p-1.5 text-left transition-colors ${
-                        isSelected
-                          ? "border-primary bg-primary/5"
-                          : isToday
-                            ? "border-primary/40 bg-primary/[0.03]"
-                            : "border-transparent hover:bg-secondary"
-                      }`}
-                    >
-                      <span className={`text-xs font-medium ${isToday ? "text-primary" : ""}`}>
-                        {c.date.getDate()}
-                      </span>
-                      <div className="mt-auto flex gap-0.5">
-                        {Array.from(new Set(dayEvents.map((e) => e.kind)))
-                          .slice(0, 4)
-                          .map((k) => (
-                            <span
-                              key={k}
-                              className={`h-1.5 w-1.5 rounded-full ${KIND_META[k].dot}`}
-                            />
-                          ))}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
-              {(Object.keys(KIND_META) as EventKind[]).map((k) => (
-                <span key={k} className="inline-flex items-center gap-1">
-                  <span className={`h-2 w-2 rounded-full ${KIND_META[k].dot}`} />
-                  {k}
-                </span>
-              ))}
-            </div>
-
-            {/* Selected day details */}
-            <div className="border-t border-border p-4">
-              <div className="mb-2 text-xs font-medium text-muted-foreground">
-                {selected ?? "날짜를 선택하세요"} 일정
-              </div>
-              {selectedEvents.length === 0 ? (
-                <div className="rounded-md bg-secondary/40 p-4 text-sm text-muted-foreground">
-                  현재 예정된 일정이 없습니다.
-                </div>
-              ) : (
-                <ul className="space-y-2">
-                  {selectedEvents.map((e, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-2 rounded-md border border-border bg-background p-2.5"
-                    >
-                      <span
-                        className={`shrink-0 rounded px-2 py-0.5 text-[11px] font-semibold ${KIND_META[e.kind].color}`}
-                      >
-                        {e.kind}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{e.showTitle}</div>
-                        <div className="truncate text-[11px] text-muted-foreground">{e.role}</div>
-                      </div>
-                      <Link
-                        to="/applicant/shows/$id"
-                        params={{ id: e.showId }}
-                        className="shrink-0 text-xs font-medium text-primary hover:underline"
-                      >
-                        보기
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* My applications */}
-        <div className="lg:col-span-2">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="text-base font-semibold">내 지원 현황</h2>
-              <p className="mt-1 text-xs text-muted-foreground">최근 제출한 지원서</p>
-            </div>
-            <Link
-              to="/applicant/applications"
-              className="text-xs font-medium text-primary hover:underline"
-            >
-              전체 지원 현황 보기 →
-            </Link>
-          </div>
-
-          <div className="mt-3 space-y-3">
-            {recent.length === 0 && (
-              <div className="rounded-xl border border-dashed border-border bg-card p-6 text-sm text-muted-foreground">
-                아직 지원한 공연이 없습니다.
-              </div>
-            )}
-            {recent.map((app) => {
-              const show = findShow(app.showId);
-              if (!show) return null;
-              const roleName = app.roleIds.map((r) => findRole(show, r)?.name).join(", ");
-              // Next upcoming event
-              const candidates = [
-                { kind: "오디션", date: show.auditionDate },
-                { kind: "연습 시작", date: show.rehearsalPeriod.split(" – ")[0] },
-                { kind: "공연 시작", date: show.showPeriod.split(" – ")[0] },
-              ];
-              const next = candidates.find((c) => parseDate(c.date) >= today);
-              return (
-                <div key={app.id} className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{show.title}</div>
-                      <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {roleName} · {app.submittedAt.split(" ")[0]} 지원
-                      </div>
-                    </div>
-                    <ApplyBadge status={app.applyStatus} />
-                  </div>
-                  {next && (
-                    <div className="mt-2 text-[11px] text-muted-foreground">
-                      다음 일정: {next.kind} · {next.date}
-                    </div>
-                  )}
-                  <Link
-                    to="/applicant/applications"
-                    className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                  >
-                    지원서 보기 <ArrowRight className="h-3 w-3" />
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Recommended shows (single entry, no duplicated CTA) */}
-      <section>
-        <div className="flex items-end justify-between">
-          <div>
-            <h2 className="text-base font-semibold">모집 중인 추천 공연</h2>
-            <p className="mt-1 text-xs text-muted-foreground">지금 지원할 수 있는 공연</p>
-          </div>
-          <Link to="/applicant/shows" className="text-xs font-medium text-primary hover:underline">
-            더 보기 →
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Today"
+        title={`${applicant.stageName || applicant.name}님, 지금 필요한 일부터 볼게요.`}
+        description="마감이 가까운 공고와 심사 결과, 오디션 일정을 먼저 확인하세요."
+        actions={
+          <Link to="/applicant/shows" className={primaryButtonClass}>
+            <Search className="h-4 w-4" /> 공연 찾기
           </Link>
-        </div>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {shows
-            .filter((s) => s.status === "모집 중")
-            .slice(0, 3)
-            .map((show) => (
+        }
+      />
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Metric label="진행 중인 지원" value={`${applications.length}건`} />
+        <Metric
+          label="예정된 오디션"
+          value={`${upcomingAuditions.length}건`}
+          tone={upcomingAuditions.length > 0 ? "warning" : "default"}
+        />
+        <Metric
+          label="마감 임박 공고"
+          value={`${openShows.filter((show) => daysUntil(show.deadline) <= 7).length}건`}
+        />
+        <Metric
+          label="프로필 준비"
+          value={profileReady ? "완료" : "확인 필요"}
+          tone={profileReady ? "success" : "warning"}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
+        <ScheduleCalendar events={calendarEvents} />
+
+        <Surface title="빠른 실행" description="자주 사용하는 작업으로 바로 이동합니다.">
+          <div className="grid gap-2">
+            <Link to="/applicant/shows" className={primaryButtonClass}>
+              <Search className="h-4 w-4" /> 모집 공고 찾기
+            </Link>
+            <Link to="/applicant/files" className={secondaryButtonClass}>
+              <FolderOpen className="h-4 w-4" /> 사진·영상 자료 관리
+            </Link>
+            <Link to="/applicant/profile" className={secondaryButtonClass}>
+              <FilePenLine className="h-4 w-4" /> 프로필 수정
+            </Link>
+          </div>
+        </Surface>
+      </div>
+
+      <Surface
+        title="마감이 가까운 공고"
+        description="현재 지원 가능한 공고를 마감 순서로 정렬했습니다."
+        action={
+          <Link to="/applicant/shows" className="text-sm font-semibold hover:underline">
+            공고 전체 보기 →
+          </Link>
+        }
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {openShows.slice(0, 4).map((show) => {
+            const dDay = daysUntil(show.deadline);
+            return (
               <Link
                 key={show.id}
                 to="/applicant/shows/$id"
                 params={{ id: show.id }}
-                className="group grid min-h-36 grid-cols-[104px_1fr] overflow-hidden rounded-xl border border-border bg-card transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                className="group overflow-hidden rounded-xl border border-border bg-card hover:border-primary"
               >
-                <Poster
-                  title={show.title}
-                  color={show.posterColor}
-                  image={show.posterImage}
-                  kind={show.kind}
-                  className="h-full rounded-none"
-                />
-                <div className="flex min-w-0 flex-col p-4">
-                  <div className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
-                    {show.producer}
+                <div className="relative aspect-[16/8] overflow-hidden bg-secondary">
+                  {show.posterImage && (
+                    <img
+                      src={show.posterImage}
+                      alt=""
+                      loading="lazy"
+                      className={`h-full w-full object-cover transition duration-500 group-hover:scale-[1.02] ${
+                        show.posterPosition === "top" ? "object-top" : "object-center"
+                      }`}
+                    />
+                  )}
+                  <span className="absolute right-3 top-3 rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground shadow">
+                    {dDay === 0 ? "오늘 마감" : `D-${dDay}`}
+                  </span>
+                </div>
+                <div className="p-4">
+                  <div className="truncate font-semibold">{show.title}</div>
+                  <div className="mt-1 truncate text-xs text-muted-foreground">
+                    {show.producer} · {show.roles.map((role) => role.name).join(", ")}
                   </div>
-                  <div className="mt-1 truncate text-sm font-semibold">{show.title}</div>
-                  <div className="mt-2 text-xs leading-5 text-muted-foreground">
-                    마감 {show.deadline}
-                    <br />
-                    오디션 {show.auditionDate}
-                  </div>
-                  <div className="mt-auto inline-flex items-center gap-1 pt-3 text-xs font-medium text-primary">
-                    자세히 보기 <ArrowRight className="h-3 w-3" />
+                  <div className="mt-3 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock3 className="h-3.5 w-3.5" /> {show.deadline}
                   </div>
                 </div>
               </Link>
-            ))}
+            );
+          })}
+          {openShows.length === 0 && (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              현재 지원 가능한 공고가 없습니다.
+            </p>
+          )}
         </div>
-      </section>
+      </Surface>
+
+      {applications.length > 0 && (
+        <Surface title="최근 지원 상태">
+          <div className="grid gap-3 md:grid-cols-2">
+            {applications.slice(0, 4).map((application) => {
+              const show = shows.find((item) => item.id === application.showId);
+              return (
+                <Link
+                  key={application.id}
+                  to="/applicant/applications/$appId"
+                  params={{ appId: application.id }}
+                  className="rounded-xl border border-border p-4 hover:border-primary"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="truncate font-semibold">{show?.title}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {application.submittedAt}
+                      </div>
+                    </div>
+                    <ApplyBadge status={application.applyStatus} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </Surface>
+      )}
     </div>
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: number }) {
+function ScheduleCalendar({ events }: { events: CalendarEvent[] }) {
+  const today = new Date();
+  const addManualSchedule = useStore((state) => state.addManualSchedule);
+  const removeManualSchedule = useStore((state) => state.removeManualSchedule);
+  const [visibleMonth, setVisibleMonth] = useState(
+    () => new Date(today.getFullYear(), today.getMonth(), 1),
+  );
+  const [selectedDate, setSelectedDate] = useState(() => dateKey(today));
+  const [isAdding, setIsAdding] = useState(false);
+  const [scheduleTitle, setScheduleTitle] = useState("");
+  const [scheduleDate, setScheduleDate] = useState(() => dateKey(today));
+  const [scheduleNote, setScheduleNote] = useState("");
+  const year = visibleMonth.getFullYear();
+  const month = visibleMonth.getMonth();
+  const leadingDays = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const selectedEvents = events.filter((event) => event.date === selectedDate);
+
+  const moveMonth = (offset: number) => {
+    const next = new Date(year, month + offset, 1);
+    setVisibleMonth(next);
+    setSelectedDate(dateKey(next));
+  };
+
+  const openScheduleForm = () => {
+    setScheduleDate(selectedDate);
+    setIsAdding(true);
+  };
+
+  const submitSchedule = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = scheduleTitle.trim();
+    if (!title || !scheduleDate) return;
+    addManualSchedule({
+      title,
+      date: scheduleDate,
+      note: scheduleNote.trim() || undefined,
+    });
+    const nextDate = new Date(`${scheduleDate}T00:00:00`);
+    setVisibleMonth(new Date(nextDate.getFullYear(), nextDate.getMonth(), 1));
+    setSelectedDate(scheduleDate);
+    setScheduleTitle("");
+    setScheduleNote("");
+    setIsAdding(false);
+  };
+
   return (
-    <div className="rounded-xl border border-white/12 bg-white/8 p-3.5 backdrop-blur-sm">
-      <div className="text-[10px] font-medium uppercase tracking-widest opacity-70">{label}</div>
-      <div className="mt-1.5 flex items-baseline gap-1">
-        <span className="font-display text-3xl leading-none tabular-nums">{value}</span>
-        <span className="text-xs opacity-80">건</span>
+    <Surface
+      title="내 일정"
+      description="마감일과 오디션, 직접 등록한 일정을 함께 확인합니다."
+      action={
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={openScheduleForm}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground"
+          >
+            <Plus className="h-3.5 w-3.5" /> 일정 추가
+          </button>
+          <div className="flex items-center gap-1" aria-label="월 이동">
+            <button
+              type="button"
+              aria-label="이전 달"
+              onClick={() => moveMonth(-1)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-input hover:bg-secondary"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <strong className="min-w-24 text-center text-sm tabular-nums">
+              {year}년 {month + 1}월
+            </strong>
+            <button
+              type="button"
+              aria-label="다음 달"
+              onClick={() => moveMonth(1)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-input hover:bg-secondary"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      }
+    >
+      {isAdding && (
+        <form
+          onSubmit={submitSchedule}
+          className="mb-4 grid gap-2 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_150px_auto]"
+        >
+          <label>
+            <span className="sr-only">일정 이름</span>
+            <input
+              value={scheduleTitle}
+              onChange={(event) => setScheduleTitle(event.target.value)}
+              placeholder="일정 이름"
+              autoFocus
+              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </label>
+          <label>
+            <span className="sr-only">일정 날짜</span>
+            <input
+              type="date"
+              value={scheduleDate}
+              onChange={(event) => setScheduleDate(event.target.value)}
+              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={!scheduleTitle.trim() || !scheduleDate}
+              className="inline-flex h-10 flex-1 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-40"
+            >
+              저장
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdding(false)}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-input bg-background px-3 text-sm font-semibold"
+            >
+              취소
+            </button>
+          </div>
+          <label className="sm:col-span-3">
+            <span className="sr-only">일정 메모</span>
+            <input
+              value={scheduleNote}
+              onChange={(event) => setScheduleNote(event.target.value)}
+              placeholder="메모 (선택)"
+              className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </label>
+        </form>
+      )}
+
+      <div className="mb-2 flex flex-wrap gap-4 text-[11px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-[#bed000]" /> 즐겨찾기 마감
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-warning" /> 오디션
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-2 rounded-full bg-primary" /> 직접 추가
+        </span>
       </div>
-    </div>
+
+      <div className="grid grid-cols-7 border-b border-border pb-2 text-center text-[11px] font-medium text-muted-foreground">
+        {["일", "월", "화", "수", "목", "금", "토"].map((day) => (
+          <span key={day}>{day}</span>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {Array.from({ length: leadingDays }, (_, index) => (
+          <span key={`empty-${index}`} aria-hidden className="h-9 sm:h-10" />
+        ))}
+        {Array.from({ length: daysInMonth }, (_, index) => {
+          const day = index + 1;
+          const key = dateKey(new Date(year, month, day));
+          const dayEvents = events.filter((event) => event.date === key);
+          const selected = selectedDate === key;
+          const isToday = dateKey(today) === key;
+
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-label={`${year}년 ${month + 1}월 ${day}일, 일정 ${dayEvents.length}개`}
+              aria-pressed={selected}
+              onClick={() => setSelectedDate(key)}
+              className={`relative flex h-9 min-w-0 flex-col items-center justify-center rounded-lg text-xs transition sm:h-10 ${
+                selected ? "bg-foreground font-semibold text-background" : "hover:bg-secondary"
+              } ${isToday && !selected ? "ring-1 ring-inset ring-foreground" : ""}`}
+            >
+              <span>{day}</span>
+              {dayEvents.length > 0 && (
+                <span className="absolute bottom-1.5 flex gap-0.5">
+                  {dayEvents.slice(0, 3).map((event) => (
+                    <span
+                      key={event.id}
+                      className={`h-1.5 w-1.5 rounded-full ${
+                        event.tone === "favorite"
+                          ? "bg-[#bed000]"
+                          : event.tone === "audition"
+                            ? "bg-warning"
+                            : "bg-primary"
+                      }`}
+                    />
+                  ))}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 border-t border-border pt-4">
+        <div className="mb-2 text-xs font-medium text-muted-foreground">
+          {selectedDate.replaceAll("-", ".")} 일정
+        </div>
+        {selectedEvents.length > 0 ? (
+          <div className="space-y-2">
+            {selectedEvents.map((event) => {
+              const content = (
+                <>
+                  <span
+                    className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                      event.tone === "favorite"
+                        ? "bg-[#f1ff3d]"
+                        : event.tone === "audition"
+                          ? "bg-warning/15"
+                          : "bg-primary text-primary-foreground"
+                    }`}
+                  >
+                    {event.tone === "favorite" ? (
+                      <Bookmark className="h-4 w-4 fill-current" />
+                    ) : (
+                      <CalendarDays className="h-4 w-4" />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs text-muted-foreground">{event.label}</span>
+                    <strong className="block truncate text-sm">{event.title}</strong>
+                  </span>
+                </>
+              );
+
+              return event.href && event.params ? (
+                <Link
+                  key={event.id}
+                  to={event.href}
+                  params={event.params as never}
+                  className="flex items-center gap-3 rounded-xl border border-border p-3 hover:border-primary"
+                >
+                  {content}
+                  <ArrowRight className="h-4 w-4 shrink-0" />
+                </Link>
+              ) : (
+                <div
+                  key={event.id}
+                  className="flex items-center gap-3 rounded-xl border border-border p-3"
+                >
+                  {content}
+                  {event.manualId && (
+                    <button
+                      type="button"
+                      aria-label={`${event.title} 일정 삭제`}
+                      onClick={() => removeManualSchedule(event.manualId!)}
+                      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="rounded-xl bg-secondary/60 px-4 py-3 text-sm text-muted-foreground">
+            선택한 날짜에 등록된 일정이 없습니다.
+          </p>
+        )}
+        <Link
+          to="/applicant/shows"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
+        >
+          <Bookmark className="h-4 w-4" /> 공고를 즐겨찾기해 일정에 추가하기
+        </Link>
+      </div>
+    </Surface>
   );
 }

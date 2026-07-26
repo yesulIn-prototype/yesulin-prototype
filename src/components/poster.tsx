@@ -2,14 +2,18 @@ export function Poster({
   title,
   color,
   image,
+  imagePosition = "center",
   className = "",
   kind = "Musical",
+  showText = true,
 }: {
   title: string;
   color: string;
   image?: string;
+  imagePosition?: "center" | "top";
   className?: string;
   kind?: string;
+  showText?: boolean;
 }) {
   return (
     <div
@@ -24,7 +28,9 @@ export function Poster({
           alt=""
           aria-hidden
           loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+          className={`absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03] ${
+            imagePosition === "top" ? "object-top" : "object-center"
+          }`}
         />
       ) : (
         <>
@@ -46,17 +52,21 @@ export function Poster({
           />
         </>
       )}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent"
-      />
-      <div className="relative z-10 flex w-full flex-col gap-2 p-4">
-        <div className="flex items-center gap-2 text-[10px] tracking-[0.28em] text-white/60 uppercase">
-          <span className="inline-block h-px w-6 bg-white/40" />
-          {kind}
-        </div>
-        <div className="font-display text-lg leading-tight text-white">{title}</div>
-      </div>
+      {showText && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/5 to-transparent"
+          />
+          <div className="relative z-10 flex w-full flex-col gap-2 p-4">
+            <div className="flex items-center gap-2 text-[10px] tracking-[0.28em] text-white/60 uppercase">
+              <span className="inline-block h-px w-6 bg-white/40" />
+              {kind}
+            </div>
+            <div className="font-display text-lg leading-tight text-white">{title}</div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -64,10 +74,12 @@ export function Poster({
 export function PhotoTile({
   color,
   label,
+  image,
   className = "",
 }: {
   color: string;
   label: string;
+  image?: string;
   className?: string;
 }) {
   return (
@@ -78,9 +90,20 @@ export function PhotoTile({
         aspectRatio: "3/4",
       }}
     >
+      {image && (
+        <img
+          src={image}
+          alt=""
+          aria-hidden
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover object-top"
+        />
+      )}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0"
+        className={`pointer-events-none absolute inset-0 ${
+          image ? "bg-gradient-to-t from-black/55 via-transparent to-transparent" : ""
+        }`}
         style={{
           backgroundImage:
             "radial-gradient(circle at 30% 20%, rgba(255,255,255,0.22) 0%, transparent 55%)",

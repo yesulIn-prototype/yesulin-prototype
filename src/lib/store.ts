@@ -1,8 +1,10 @@
 import { create } from "zustand";
+import { createJSONStorage, persist, type StateStorage } from "zustand/middleware";
 
 export type ReviewStatus = "미확인" | "검토 중" | "오디션 대상" | "보류" | "합격" | "불합격";
-export type ApplyStatus = "작성 중" | "지원 완료" | "서류 확인" | "오디션 예정" | "결과 발표";
+export type ApplyStatus = "작성 중" | "지원 완료" | "서류 확인" | "오디션 예정" | "합격" | "불합격";
 export type ScheduleKind = "지원 마감" | "오디션" | "연습" | "공연";
+export type PublicationStatus = "임시 저장" | "게시됨";
 
 export type Career = {
   id: string;
@@ -17,6 +19,7 @@ export type Career = {
 export type Photo = {
   id: string;
   fileName: string;
+  image?: string;
   type: "정면 프로필" | "전신 프로필" | "상반신 프로필" | "콘셉트 사진";
   createdAt: string;
   isDefault?: boolean;
@@ -27,6 +30,7 @@ export type Video = {
   id: string;
   title: string;
   fileName: string;
+  url?: string;
   type: "연기 자유 영상" | "지정 연기 영상" | "노래 자유곡 영상" | "안무 영상";
   duration: string;
   createdAt: string;
@@ -36,8 +40,16 @@ export type Video = {
 export type Doc = {
   id: string;
   fileName: string;
+  url?: string;
   type: "이력서" | "포트폴리오" | "기타 제출 문서";
   createdAt: string;
+};
+
+export type ManualSchedule = {
+  id: string;
+  title: string;
+  date: string;
+  note?: string;
 };
 
 export type Applicant = {
@@ -85,8 +97,12 @@ export type Show = {
   producer: string;
   posterColor: string;
   posterImage: string;
+  posterPosition?: "center" | "top";
   kind: string;
   description: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+  producerUrl?: string;
   roles: ShowRole[];
   deadline: string;
   auditionDate: string;
@@ -98,6 +114,8 @@ export type Show = {
   optionalItems: RequirementItem[];
   additionalQuestions: AdditionalQuestion[];
   status: "모집 중" | "모집 마감" | "모집 예정";
+  publicationStatus?: PublicationStatus;
+  updatedAt?: string;
 };
 
 export type Application = {
@@ -116,6 +134,8 @@ export type Application = {
   availability: string;
   memo: string;
   motivation: string;
+  shortlisted?: boolean;
+  rating?: number;
 };
 
 // -------- mock data --------
@@ -165,6 +185,7 @@ const meApplicant: Applicant = {
     {
       id: "p1",
       fileName: "profile-front.jpg",
+      image: "/images/profile/kim-haneul-front.png",
       type: "정면 프로필",
       createdAt: "2026.05.02",
       isDefault: true,
@@ -173,6 +194,7 @@ const meApplicant: Applicant = {
     {
       id: "p2",
       fileName: "profile-full.jpg",
+      image: "/images/profile/kim-haneul-full.png",
       type: "전신 프로필",
       createdAt: "2026.05.02",
       color: "#6f7477",
@@ -180,6 +202,7 @@ const meApplicant: Applicant = {
     {
       id: "p3",
       fileName: "profile-upper.jpg",
+      image: "/images/profile/kim-haneul-upper.png",
       type: "상반신 프로필",
       createdAt: "2026.04.14",
       color: "#c7d228",
@@ -187,6 +210,7 @@ const meApplicant: Applicant = {
     {
       id: "p4",
       fileName: "concept-moonlight.jpg",
+      image: "/images/profile/kim-haneul-concept.png",
       type: "콘셉트 사진",
       createdAt: "2026.03.30",
       color: "#344054",
@@ -263,6 +287,7 @@ const otherApplicants: Applicant[] = [
       {
         id: "p1",
         fileName: "junho-front.jpg",
+        image: "/images/applicants/lee-junho.jpg",
         type: "정면 프로필",
         createdAt: "2026.05.01",
         isDefault: true,
@@ -324,6 +349,7 @@ const otherApplicants: Applicant[] = [
       {
         id: "p1",
         fileName: "seoyeon-front.jpg",
+        image: "/images/applicants/park-seoyeon.jpg",
         type: "정면 프로필",
         createdAt: "2026.04.20",
         isDefault: true,
@@ -392,6 +418,7 @@ const otherApplicants: Applicant[] = [
       {
         id: "p1",
         fileName: "minjae-front.jpg",
+        image: "/images/applicants/jung-minjae.jpg",
         type: "정면 프로필",
         createdAt: "2026.04.15",
         isDefault: true,
@@ -437,6 +464,144 @@ const commonRequired: RequirementItem[] = [
 ];
 
 const shows: Show[] = [
+  {
+    id: "show-restaurant-christmas",
+    title: "연극 식당: 매일이 크리스마스",
+    producer: "컴퍼니 연결 × 남극장",
+    posterColor: "#2c0907",
+    posterImage: "/images/editorial/company-connect-restaurant.jpg",
+    posterPosition: "top",
+    kind: "연극",
+    description:
+      "세상의 모든 숫자가 사라진 날, 자신의 식당을 매일 크리스마스로 꾸미는 남자와 크리스마스에 운명을 만날 것이라 믿는 여자가 서로의 하루가 되어가는 로맨틱 코미디입니다. 컴퍼니 연결과 남극장이 함께 제작하며 관객과의 직접적인 소통과 인터랙션이 포함됩니다.",
+    sourceUrl:
+      "https://otr.co.kr/audition/?board_name=audition&search_field=fn_user_pid&search_text=2444&list_type=list&lang=ko_KR&vid=21547",
+    sourceLabel: "OTR 원문 공고",
+    producerUrl: "https://eyongyeol.creatorlink.net/",
+    roles: [
+      {
+        id: "r1",
+        name: "남자 역",
+        description: "숫자가 사라진 뒤 운영하던 레스토랑을 매일 크리스마스로 꾸미고 있는 사장",
+        requirements: "진지하고 조금 너드스러운 인물을 표현할 수 있는 배우",
+        allowMultiple: true,
+      },
+      {
+        id: "r2",
+        name: "여자 역",
+        description: "크리스마스에 운명을 만나게 될 것이라고 믿는 밝고 시원시원한 인물",
+        requirements: "쾌활한 에너지와 로맨틱 코미디 연기가 가능한 배우",
+        allowMultiple: true,
+      },
+      {
+        id: "r3",
+        name: "멀티 역",
+        description: "옆가게 사장, 단골손님, 배달기사, 구청 직원, 사진사, 뉴스 앵커 등 다수의 인물",
+        requirements: "빠른 인물 전환과 다양한 캐릭터 표현이 가능한 배우",
+        allowMultiple: true,
+      },
+    ],
+    deadline: "2026.07.31 20:00",
+    auditionDate: "2026.08.03 – 2026.08.05",
+    rehearsalPeriod: "2026.08.24부터 평일 13:00–17:00",
+    showPeriod: "2026.10.07 – 2027.01.10",
+    venue: "남극장",
+    compensation: "개별 협의",
+    requiredItems: [
+      {
+        key: "profile",
+        label: "사진·이력·연락처가 포함된 프로필",
+        required: true,
+      },
+      {
+        key: "video-acting",
+        label: "연기 영상",
+        required: true,
+      },
+    ],
+    optionalItems: [
+      {
+        key: "video-song",
+        label: "노래 영상 또는 음원",
+        required: false,
+        note: "2차 오디션 대상자는 MR 제출 안내 예정",
+      },
+    ],
+    additionalQuestions: [
+      {
+        id: "q1",
+        question: "지원 배역과 해당 배역을 선택한 이유를 작성해주세요.",
+        type: "긴 답변",
+      },
+      {
+        id: "q2",
+        question: "전체 공연 및 연습 일정에 참여할 수 있나요?",
+        type: "참여 가능 여부",
+        options: ["가능", "일부 협의 필요", "불가"],
+      },
+      {
+        id: "q3",
+        question: "관객과 직접 소통하거나 즉흥적으로 연기한 경험이 있나요?",
+        type: "긴 답변",
+      },
+    ],
+    status: "모집 중",
+  },
+  {
+    id: "show-company-connect-ensemble",
+    title: "2026 컴퍼니 연결 배우단원 모집",
+    producer: "컴퍼니 연결 × 남극장",
+    posterColor: "#173a69",
+    posterImage: "/images/editorial/company-connect-ensemble.jpg",
+    posterPosition: "top",
+    kind: "연극",
+    description:
+      "2017년 창단한 컴퍼니 연결은 남극장을 기반으로 지속적인 훈련과 창작을 함께할 배우단원을 모집했습니다. 단원은 정기 활동과 기획·제작 프로덕션, 공연장 및 공동체 운영에 참여하며 장기적으로 성장하는 창작 공동체를 지향합니다.",
+    sourceUrl:
+      "https://otr.co.kr/audition/?board_name=audition&search_field=fn_user_pid&search_text=2444&list_type=list&lang=ko_KR&vid=21441",
+    sourceLabel: "OTR 원문 공고",
+    producerUrl: "https://eyongyeol.creatorlink.net/",
+    roles: [
+      {
+        id: "r1",
+        name: "배우단원",
+        description:
+          "컴퍼니 연결의 정기 단원 활동과 기획·제작 프로덕션, 남극장 운영에 함께하는 구성원",
+        requirements:
+          "경력·학력·전공 제한 없음, 지속적인 훈련과 창작 활동 및 단체 활동에 책임감 있게 참여",
+        allowMultiple: false,
+      },
+    ],
+    deadline: "2026.07.05 18:00",
+    auditionDate: "2026.07.07 – 2026.07.08, 13:00–18:00",
+    rehearsalPeriod: "단원 활동 중 지속 훈련 및 창작",
+    showPeriod: "1년 계약, 상호 협의로 연장",
+    venue: "남극장 (서울 관악구 사로수길)",
+    compensation: "작품 및 행사 건당 협의",
+    requiredItems: [
+      {
+        key: "application-form",
+        label: "컴퍼니 연결 배우단원 지원서",
+        required: true,
+        note: "지정 양식",
+      },
+    ],
+    optionalItems: [
+      {
+        key: "video-acting",
+        label: "연기 및 특기 영상",
+        required: false,
+      },
+    ],
+    additionalQuestions: [
+      {
+        id: "q1",
+        question: "장기적인 단원 활동과 창작 공동체에 지원한 이유를 작성해주세요.",
+        type: "긴 답변",
+      },
+    ],
+    status: "모집 마감",
+  },
   {
     id: "show-moonlight",
     title: "뮤지컬 달빛",
@@ -499,7 +664,7 @@ const shows: Show[] = [
       },
       { id: "q4", question: "현재 참여 중이거나 예정된 다른 작품이 있나요?", type: "짧은 답변" },
     ],
-    status: "모집 중",
+    status: "모집 마감",
   },
   {
     id: "show-cityrain",
@@ -655,8 +820,8 @@ const initialApplications: Application[] = [
     applicantId: "me",
     applicantName: "김하늘",
     submittedAt: "2026.06.18 09:12",
-    applyStatus: "오디션 예정",
-    reviewStatus: "오디션 대상",
+    applyStatus: "합격",
+    reviewStatus: "합격",
     selectedCareerIds: ["c1"],
     selectedPhotoIds: ["p1", "p2"],
     selectedVideoIds: ["v1", "v3"],
@@ -739,11 +904,18 @@ type Store = {
   otherApplicants: Applicant[];
   shows: Show[];
   applications: Application[];
+  favoriteShowIds: string[];
+  manualSchedules: ManualSchedule[];
 
-  addPhoto: () => void;
-  addVideo: () => void;
+  addPhoto: (file: File, type?: Photo["type"]) => Promise<void>;
+  addVideo: (file: File, type?: Video["type"]) => Promise<void>;
+  addDoc: (file: File, type?: Doc["type"]) => Promise<void>;
+  removePhoto: (id: string) => void;
+  removeVideo: (id: string) => void;
+  removeDoc: (id: string) => void;
   addCareer: (career: Omit<Career, "id">) => void;
   updateApplicant: (patch: Partial<Applicant>) => void;
+  saveShow: (show: Omit<Show, "id" | "updatedAt"> & { id?: string }) => string;
 
   submitApplication: (
     app: Omit<
@@ -752,100 +924,334 @@ type Store = {
     >,
   ) => string;
   updateReview: (appId: string, patch: Partial<Pick<Application, "reviewStatus" | "memo">>) => void;
+  updateReviews: (
+    appIds: string[],
+    patch: Partial<Pick<Application, "reviewStatus" | "memo" | "shortlisted" | "rating">>,
+  ) => void;
+  toggleShortlist: (appId: string) => void;
+  setRating: (appId: string, rating: number) => void;
+  toggleFavoriteShow: (showId: string) => void;
+  addManualSchedule: (schedule: Omit<ManualSchedule, "id">) => void;
+  removeManualSchedule: (id: string) => void;
 
   getApplicantById: (id: string) => Applicant | undefined;
 };
 
-let photoCounter = 100;
-let videoCounter = 100;
-let careerCounter = 100;
-let appCounter = 100;
+const newId = (prefix: string) =>
+  `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`;
 
-export const useStore = create<Store>((set, get) => ({
-  applicant: meApplicant,
-  otherApplicants,
-  shows,
-  applications: initialApplications,
+const todayLabel = () =>
+  new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(new Date())
+    .replace(/\s/g, "");
 
-  addPhoto: () =>
-    set((s) => {
-      const colors = ["#171717", "#344054", "#6f7477", "#c7d228", "#242424"];
-      const types: Photo["type"][] = ["정면 프로필", "전신 프로필", "상반신 프로필", "콘셉트 사진"];
-      const idx = s.applicant.photos.length;
-      const newPhoto: Photo = {
-        id: `p${photoCounter++}`,
-        fileName: `사진_${photoCounter}.jpg`,
-        type: types[idx % types.length],
-        createdAt: "방금 등록",
-        color: colors[idx % colors.length],
-      };
-      return { applicant: { ...s.applicant, photos: [...s.applicant.photos, newPhoto] } };
-    }),
+const fileToDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 
-  addVideo: () =>
-    set((s) => {
-      const colors = ["#171717", "#344054", "#6f7477", "#c7d228"];
-      const types: Video["type"][] = [
-        "연기 자유 영상",
-        "지정 연기 영상",
-        "노래 자유곡 영상",
-        "안무 영상",
-      ];
-      const idx = s.applicant.videos.length;
-      const newVideo: Video = {
-        id: `v${videoCounter++}`,
-        title: `새 영상 ${videoCounter}`,
-        fileName: `영상_${videoCounter}.mp4`,
-        type: types[idx % types.length],
-        duration: "1:30",
-        createdAt: "방금 등록",
-        color: colors[idx % colors.length],
-      };
-      return { applicant: { ...s.applicant, videos: [...s.applicant.videos, newVideo] } };
-    }),
+const indexedDbStorage: StateStorage = {
+  getItem: async (name) => {
+    if (typeof indexedDB === "undefined") return null;
+    return runIndexedDbRequest("readonly", (store) => store.get(name));
+  },
+  setItem: async (name, value) => {
+    if (typeof indexedDB === "undefined") return;
+    await runIndexedDbRequest("readwrite", (store) => store.put(value, name));
+  },
+  removeItem: async (name) => {
+    if (typeof indexedDB === "undefined") return;
+    await runIndexedDbRequest("readwrite", (store) => store.delete(name));
+  },
+};
 
-  addCareer: (career) =>
-    set((s) => ({
-      applicant: {
-        ...s.applicant,
-        careers: [...s.applicant.careers, { ...career, id: `c${careerCounter++}` }],
-      },
-    })),
-
-  updateApplicant: (patch) => set((s) => ({ applicant: { ...s.applicant, ...patch } })),
-
-  submitApplication: (app) => {
-    const id = `app-${appCounter++}`;
-    const now = new Date();
-    const submittedAt = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, "0")}.${String(
-      now.getDate(),
-    ).padStart(
-      2,
-      "0",
-    )} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-    const full: Application = {
-      ...app,
-      id,
-      submittedAt,
-      applyStatus: "지원 완료",
-      reviewStatus: "미확인",
-      applicantId: "me",
-      applicantName: get().applicant.name,
+function runIndexedDbRequest<T>(
+  mode: IDBTransactionMode,
+  requestFactory: (store: IDBObjectStore) => IDBRequest<T>,
+) {
+  return new Promise<T>((resolve, reject) => {
+    const openRequest = indexedDB.open("yesulin-workspace", 1);
+    openRequest.onupgradeneeded = () => {
+      if (!openRequest.result.objectStoreNames.contains("state")) {
+        openRequest.result.createObjectStore("state");
+      }
     };
-    set((s) => ({ applications: [full, ...s.applications] }));
-    return id;
-  },
+    openRequest.onerror = () => reject(openRequest.error);
+    openRequest.onsuccess = () => {
+      const transaction = openRequest.result.transaction("state", mode);
+      const request = requestFactory(transaction.objectStore("state"));
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+      transaction.oncomplete = () => openRequest.result.close();
+    };
+  });
+}
 
-  updateReview: (appId, patch) =>
-    set((s) => ({
-      applications: s.applications.map((a) => (a.id === appId ? { ...a, ...patch } : a)),
-    })),
+export function applyStatusForReview(status: ReviewStatus): ApplyStatus {
+  if (status === "미확인") return "지원 완료";
+  if (status === "검토 중" || status === "보류") return "서류 확인";
+  if (status === "오디션 대상") return "오디션 예정";
+  return status;
+}
 
-  getApplicantById: (id) => {
-    if (id === "me") return get().applicant;
-    return get().otherApplicants.find((a) => a.id === id);
-  },
-}));
+export const useStore = create<Store>()(
+  persist(
+    (set, get) => ({
+      applicant: meApplicant,
+      otherApplicants,
+      shows,
+      applications: initialApplications,
+      favoriteShowIds: [],
+      manualSchedules: [],
+
+      addPhoto: async (file, type = "정면 프로필") => {
+        const image = await fileToDataUrl(file);
+        const newPhoto: Photo = {
+          id: newId("photo"),
+          fileName: file.name,
+          image,
+          type,
+          createdAt: todayLabel(),
+          color: "#171717",
+        };
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            photos: [...state.applicant.photos, newPhoto],
+          },
+        }));
+      },
+
+      addVideo: async (file, type = "연기 자유 영상") => {
+        const url = await fileToDataUrl(file);
+        const newVideo: Video = {
+          id: newId("video"),
+          title: file.name.replace(/\.[^.]+$/, ""),
+          fileName: file.name,
+          url,
+          type,
+          duration: "업로드 영상",
+          createdAt: todayLabel(),
+          color: "#171717",
+        };
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            videos: [...state.applicant.videos, newVideo],
+          },
+        }));
+      },
+
+      addDoc: async (file, type = "기타 제출 문서") => {
+        const url = await fileToDataUrl(file);
+        const newDoc: Doc = {
+          id: newId("doc"),
+          fileName: file.name,
+          url,
+          type,
+          createdAt: todayLabel(),
+        };
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            docs: [...state.applicant.docs, newDoc],
+          },
+        }));
+      },
+
+      removePhoto: (id) =>
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            photos: state.applicant.photos.filter((photo) => photo.id !== id),
+          },
+        })),
+      removeVideo: (id) =>
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            videos: state.applicant.videos.filter((video) => video.id !== id),
+          },
+        })),
+      removeDoc: (id) =>
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            docs: state.applicant.docs.filter((doc) => doc.id !== id),
+          },
+        })),
+
+      addCareer: (career) =>
+        set((state) => ({
+          applicant: {
+            ...state.applicant,
+            careers: [...state.applicant.careers, { ...career, id: newId("career") }],
+          },
+        })),
+
+      updateApplicant: (patch) => set((state) => ({ applicant: { ...state.applicant, ...patch } })),
+
+      saveShow: (show) => {
+        const id = show.id ?? newId("show");
+        const saved: Show = {
+          ...show,
+          id,
+          updatedAt: new Date().toISOString(),
+        };
+        set((state) => ({
+          shows: state.shows.some((item) => item.id === id)
+            ? state.shows.map((item) => (item.id === id ? saved : item))
+            : [saved, ...state.shows],
+        }));
+        return id;
+      },
+
+      submitApplication: (application) => {
+        const id = newId("application");
+        const submittedAt = new Intl.DateTimeFormat("ko-KR", {
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        })
+          .format(new Date())
+          .replace(/\s/g, " ");
+        const full: Application = {
+          ...application,
+          id,
+          submittedAt,
+          applyStatus: "지원 완료",
+          reviewStatus: "미확인",
+          applicantId: "me",
+          applicantName: get().applicant.name,
+          shortlisted: false,
+          rating: 0,
+        };
+        set((state) => ({ applications: [full, ...state.applications] }));
+        return id;
+      },
+
+      updateReview: (appId, patch) =>
+        set((state) => ({
+          applications: state.applications.map((application) =>
+            application.id === appId
+              ? {
+                  ...application,
+                  ...patch,
+                  applyStatus: patch.reviewStatus
+                    ? applyStatusForReview(patch.reviewStatus)
+                    : application.applyStatus,
+                }
+              : application,
+          ),
+        })),
+
+      updateReviews: (appIds, patch) =>
+        set((state) => ({
+          applications: state.applications.map((application) =>
+            appIds.includes(application.id)
+              ? {
+                  ...application,
+                  ...patch,
+                  applyStatus: patch.reviewStatus
+                    ? applyStatusForReview(patch.reviewStatus)
+                    : application.applyStatus,
+                }
+              : application,
+          ),
+        })),
+
+      toggleShortlist: (appId) =>
+        set((state) => ({
+          applications: state.applications.map((application) =>
+            application.id === appId
+              ? { ...application, shortlisted: !application.shortlisted }
+              : application,
+          ),
+        })),
+
+      setRating: (appId, rating) =>
+        set((state) => ({
+          applications: state.applications.map((application) =>
+            application.id === appId
+              ? { ...application, rating: Math.max(0, Math.min(5, rating)) }
+              : application,
+          ),
+        })),
+
+      toggleFavoriteShow: (showId) =>
+        set((state) => ({
+          favoriteShowIds: state.favoriteShowIds.includes(showId)
+            ? state.favoriteShowIds.filter((id) => id !== showId)
+            : [...state.favoriteShowIds, showId],
+        })),
+
+      addManualSchedule: (schedule) =>
+        set((state) => ({
+          manualSchedules: [
+            ...state.manualSchedules,
+            {
+              ...schedule,
+              id: newId("schedule"),
+            },
+          ],
+        })),
+
+      removeManualSchedule: (id) =>
+        set((state) => ({
+          manualSchedules: state.manualSchedules.filter((schedule) => schedule.id !== id),
+        })),
+
+      getApplicantById: (id) => {
+        if (id === "me") return get().applicant;
+        return get().otherApplicants.find((applicant) => applicant.id === id);
+      },
+    }),
+    {
+      name: "yesulin-workspace-v5",
+      storage: createJSONStorage(() => indexedDbStorage),
+      partialize: (state) => ({
+        applicant: state.applicant,
+        shows: state.shows,
+        applications: state.applications,
+        favoriteShowIds: state.favoriteShowIds,
+        manualSchedules: state.manualSchedules,
+      }),
+      merge: (persistedState, currentState) => {
+        const saved = persistedState as Partial<Store>;
+        const savedApplicant = saved.applicant;
+        const photos = (savedApplicant?.photos ?? currentState.applicant.photos).map((photo) => {
+          const bundledPhoto = currentState.applicant.photos.find((item) => item.id === photo.id);
+          return {
+            ...photo,
+            image: photo.image ?? bundledPhoto?.image,
+          };
+        });
+
+        return {
+          ...currentState,
+          ...saved,
+          favoriteShowIds: saved.favoriteShowIds ?? [],
+          manualSchedules: saved.manualSchedules ?? [],
+          applicant: {
+            ...currentState.applicant,
+            ...savedApplicant,
+            photos,
+          },
+        };
+      },
+    },
+  ),
+);
 
 // helpers
 export const findShow = (id: string) => useStore.getState().shows.find((s) => s.id === id);
@@ -853,8 +1259,10 @@ export const findRole = (show: Show | undefined, id: string) =>
   show?.roles.find((r) => r.id === id);
 
 export function daysUntil(dateStr: string): number {
-  const [y, m, d] = dateStr.split(".").map((n) => parseInt(n, 10));
-  const target = new Date(y, m - 1, d);
-  const now = new Date(2026, 6, 14); // fixed "today" for demo
+  const match = dateStr.match(/(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
+  if (!match) return 0;
+  const target = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
   return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 }

@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { LayoutDashboard, Film, Users, PlusCircle } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 export const Route = createFileRoute("/producer")({
   component: ProducerLayout,
@@ -19,9 +20,9 @@ function ProducerLayout() {
     <div className="min-h-screen bg-surface lg:grid lg:grid-cols-[248px_1fr]">
       <aside className="hidden border-r border-border bg-sidebar lg:flex lg:flex-col">
         <Link to="/" className="flex items-center gap-2.5 border-b border-border px-6 py-5">
-          <BrandMark />
+          <BrandMark size="sm" />
           <div className="flex flex-col leading-none">
-            <span className="text-sm font-semibold tracking-tight">공연 지원 플랫폼</span>
+            <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
             <span className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
               Producer Console
             </span>
@@ -66,8 +67,8 @@ function ProducerLayout() {
       <div className="min-w-0 bg-background">
         <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
           <Link to="/" className="flex items-center gap-2">
-            <BrandMark />
-            <span className="text-sm font-semibold">공연사 콘솔</span>
+            <BrandMark size="sm" />
+            <span className="text-sm font-bold">예술IN</span>
           </Link>
         </header>
         <nav
@@ -97,24 +98,6 @@ function ProducerLayout() {
           <Outlet />
         </main>
       </div>
-    </div>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
-        <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
-      </svg>
     </div>
   );
 }

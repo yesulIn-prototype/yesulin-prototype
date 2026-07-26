@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
 import { PhotoTile, VideoTile } from "@/components/poster";
 import { Check, ChevronLeft, ChevronRight, Info, AlertTriangle, Sparkles } from "lucide-react";
@@ -8,15 +8,7 @@ export const Route = createFileRoute("/applicant/shows/$id/apply")({
   component: ApplyWizard,
 });
 
-const STEPS = [
-  "지원 배역 선택",
-  "기본 프로필 확인",
-  "경력 선택",
-  "사진 선택",
-  "영상 선택",
-  "추가 질문",
-  "미리보기 및 제출",
-];
+const STEPS = ["배역 선택", "프로필·자료", "질문·일정", "검토·제출"];
 
 type ApplicationDraft = {
   step: number;
@@ -64,7 +56,9 @@ function ApplyWizard() {
   });
   const [draftReady, setDraftReady] = useState(false);
   const [saveStatus, setSaveStatus] = useState("저장된 작성 내용을 확인하고 있습니다");
-  const draftKey = `audition-application-draft:${id}`;
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogTriggerRef = useRef<HTMLElement | null>(null);
+  const draftKey = `yesulin-application-draft:v2:${id}`;
 
   useEffect(() => {
     try {
@@ -72,9 +66,12 @@ function ApplyWizard() {
       if (raw) {
         const draft = JSON.parse(raw) as Partial<ApplicationDraft>;
         if (typeof draft.step === "number") {
-          setStep(draft.step);
+          const restoredStep = Math.min(draft.step, STEPS.length - 1);
+          setStep(restoredStep);
           setVisited(
-            Object.fromEntries(Array.from({ length: draft.step + 1 }, (_, index) => [index, true])),
+            Object.fromEntries(
+              Array.from({ length: restoredStep + 1 }, (_, index) => [index, true]),
+            ),
           );
         }
         if (Array.isArray(draft.roleIds)) setRoleIds(draft.roleIds);
@@ -136,6 +133,18 @@ function ApplyWizard() {
     videoMap,
   ]);
 
+  useEffect(() => {
+    if (!confirmDialog.open) return;
+    dialogRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setConfirmDialog({ open: false, missing: [] });
+      dialogTriggerRef.current?.focus();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [confirmDialog.open]);
+
   if (!show) throw notFound();
 
   const photoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) =>
@@ -148,7 +157,7 @@ function ApplyWizard() {
 
   // Per-step missing (only the required items for that step)
   const stepMissing = useMemo<Record<number, string[]>>(() => {
-    const m: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] };
+    const m: Record<number, string[]> = { 0: [], 1: [], 2: [], 3: [] };
     if (roleIds.length === 0) m[0].push("지원 배역");
     // step 1 profile: name/phone/email required
     if (!profile.name.trim()) m[1].push("이름");
@@ -160,18 +169,18 @@ function ApplyWizard() {
       careerMode === "select" &&
       careerIds.length === 0
     ) {
-      m[2].push("경력 선택");
+      m[1].push("경력 선택");
     }
     // step 3 photos
     for (const req of show.requiredItems) {
-      if (req.key.startsWith("photo-") && !photoMap[req.key]) m[3].push(req.label);
+      if (req.key.startsWith("photo-") && !photoMap[req.key]) m[1].push(req.label);
     }
     // step 4 videos
     for (const req of show.requiredItems) {
-      if (req.key.startsWith("video-") && !videoMap[req.key]) m[4].push(req.label);
+      if (req.key.startsWith("video-") && !videoMap[req.key]) m[1].push(req.label);
     }
     // step 5 additional
-    if (hasMotivation && !motivation.trim()) m[5].push("지원 동기");
+    if (hasMotivation && !motivation.trim()) m[2].push("지원 동기");
     return m;
   }, [
     roleIds,
@@ -221,6 +230,7 @@ function ApplyWizard() {
   function attemptNext() {
     const currentMissing = stepMissing[step] ?? [];
     if (currentMissing.length > 0) {
+      dialogTriggerRef.current = document.activeElement as HTMLElement | null;
       setConfirmDialog({ open: true, missing: currentMissing });
       return;
     }
@@ -265,10 +275,7 @@ function ApplyWizard() {
         </div>
       </div>
 
-      <ol
-        className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7"
-        aria-label="지원서 작성 단계"
-      >
+      <ol className="grid grid-cols-4 gap-2" aria-label="지원서 작성 단계">
         {STEPS.map((s, i) => {
           const status = stepStatus(i);
           const isActive = i === step;
@@ -276,9 +283,10 @@ function ApplyWizard() {
           return (
             <li key={s}>
               <button
+                type="button"
                 onClick={() => goToStep(i)}
                 aria-current={isActive ? "step" : undefined}
-                className={`relative w-full rounded-lg border p-2 text-left transition-colors ${
+                className={`relative w-full rounded-xl border p-2 text-center transition-colors ${
                   isActive
                     ? "border-primary bg-primary/5"
                     : status === "누락"
@@ -288,7 +296,7 @@ function ApplyWizard() {
                         : "border-border bg-card"
                 }`}
               >
-                <div className="flex items-center gap-1.5">
+                <div className="flex flex-col items-center gap-1.5 sm:flex-row sm:text-left">
                   <span
                     className={`inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
                       status === "완료"
@@ -302,10 +310,12 @@ function ApplyWizard() {
                   >
                     {status === "완료" ? "✓" : status === "누락" ? "!" : i + 1}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[11px] font-medium">{s}</span>
+                  <span className="min-w-0 text-[11px] font-semibold leading-4 sm:flex-1 sm:text-xs">
+                    {s}
+                  </span>
                 </div>
                 <div
-                  className={`mt-1 text-[10px] ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}
+                  className={`mt-1 hidden text-[10px] sm:block ${status === "누락" ? "text-destructive" : "text-muted-foreground"}`}
                 >
                   {status === "누락" ? `필수 ${missingCount}개 누락` : status}
                 </div>
@@ -423,7 +433,7 @@ function ApplyWizard() {
           </StepBlock>
         )}
 
-        {step === 2 && (
+        {step === 1 && (
           <StepBlock
             title="경력 선택"
             hint="내 프로필에 저장된 경력에서 이번 지원서에 포함할 항목을 선택합니다."
@@ -478,7 +488,7 @@ function ApplyWizard() {
           </StepBlock>
         )}
 
-        {step === 3 && (
+        {step === 1 && (
           <StepBlock
             title="사진 선택"
             hint="공연사가 요구한 사진 유형에 맞춰 내 사진 보관함에서 선택합니다."
@@ -510,6 +520,7 @@ function ApplyWizard() {
                       const active = photoMap[req.key] === p.id;
                       return (
                         <button
+                          type="button"
                           key={p.id}
                           onClick={() => setPhotoMap({ ...photoMap, [req.key]: p.id })}
                           aria-pressed={active}
@@ -519,7 +530,7 @@ function ApplyWizard() {
                               : "border-transparent hover:border-primary/30"
                           }`}
                         >
-                          <PhotoTile color={p.color} label={p.type} />
+                          <PhotoTile color={p.color} label={p.type} image={p.image} />
                           <div className="p-2">
                             <div className="truncate text-[11px] font-medium">{p.fileName}</div>
                             <div className="truncate text-[10px] text-muted-foreground">
@@ -536,7 +547,7 @@ function ApplyWizard() {
           </StepBlock>
         )}
 
-        {step === 4 && (
+        {step === 1 && (
           <StepBlock
             title="영상 선택"
             hint="공연사가 요구한 영상 유형과 조건을 확인하고 내 영상 보관함에서 선택합니다."
@@ -596,7 +607,7 @@ function ApplyWizard() {
           </StepBlock>
         )}
 
-        {step === 5 && (
+        {step === 2 && (
           <StepBlock title="공연별 추가 질문" hint="이 공연을 위해 공연사가 추가한 질문입니다.">
             {hasMotivation && (
               <div>
@@ -656,7 +667,7 @@ function ApplyWizard() {
           </StepBlock>
         )}
 
-        {step === 6 && (
+        {step === 3 && (
           <StepBlock
             title="지원서 미리보기"
             hint="아래 내용으로 제출됩니다. 필수 항목이 모두 포함되어 있는지 확인하세요."
@@ -695,6 +706,7 @@ function ApplyWizard() {
 
       <div className="sticky bottom-[5.4rem] z-20 flex items-center justify-between rounded-xl border border-border bg-card/95 p-3 shadow-[var(--shadow-elev-2)] backdrop-blur md:static md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         <button
+          type="button"
           onClick={() => goToStep(Math.max(0, step - 1))}
           disabled={step === 0}
           className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium disabled:opacity-40"
@@ -703,6 +715,7 @@ function ApplyWizard() {
         </button>
         {step < STEPS.length - 1 ? (
           <button
+            type="button"
             onClick={attemptNext}
             className="inline-flex items-center gap-1 rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
           >
@@ -710,6 +723,7 @@ function ApplyWizard() {
           </button>
         ) : (
           <button
+            type="button"
             onClick={submit}
             disabled={missing.length > 0}
             title={missing.length > 0 ? "필수 항목을 모두 채워야 제출할 수 있습니다" : ""}
@@ -722,6 +736,8 @@ function ApplyWizard() {
 
       {confirmDialog.open && (
         <div
+          ref={dialogRef}
+          tabIndex={-1}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
@@ -747,12 +763,14 @@ function ApplyWizard() {
             </div>
             <div className="mt-5 flex justify-end gap-2">
               <button
+                type="button"
                 onClick={() => setConfirmDialog({ open: false, missing: [] })}
                 className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-secondary"
               >
                 이 단계에서 작성하기
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setConfirmDialog({ open: false, missing: [] });
                   goToStep(step + 1);
@@ -937,7 +955,7 @@ function Preview({
             if (!p) return null;
             return (
               <div key={k} className="w-20">
-                <PhotoTile color={p.color} label={p.type} />
+                <PhotoTile color={p.color} label={p.type} image={p.image} />
                 <div className="mt-1 truncate text-[10px]">{p.fileName}</div>
               </div>
             );

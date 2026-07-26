@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { Home, Search, FileStack, User, FolderOpen, ChevronLeft } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { BrandMark } from "@/components/brand-mark";
 
 export const Route = createFileRoute("/applicant")({
   component: ApplicantLayout,
@@ -24,9 +25,9 @@ function ApplicantLayout() {
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
-              <BrandMark />
+              <BrandMark size="sm" />
               <div className="flex flex-col leading-none">
-                <span className="text-sm font-semibold tracking-tight">공연 지원 플랫폼</span>
+                <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
                 <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
                   Applicant
                 </span>
@@ -99,24 +100,6 @@ function ApplicantLayout() {
           );
         })}
       </nav>
-    </div>
-  );
-}
-
-function BrandMark() {
-  return (
-    <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      >
-        <path d="M4 3v14c0 2.2 3.6 4 8 4s8-1.8 8-4V3" />
-        <path d="M4 3c0 2.2 3.6 4 8 4s8-1.8 8-4" />
-      </svg>
     </div>
   );
 }

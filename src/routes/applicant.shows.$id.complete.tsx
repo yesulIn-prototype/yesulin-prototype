@@ -51,12 +51,15 @@ function ApplyComplete() {
           >
             <Files className="h-4 w-4" /> 내 지원 현황으로 이동
           </Link>
-          <Link
-            to="/applicant/applications"
-            className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"
-          >
-            제출한 지원서 확인
-          </Link>
+          {app && (
+            <Link
+              to="/applicant/applications/$appId"
+              params={{ appId: app.id }}
+              className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"
+            >
+              제출한 지원서 확인
+            </Link>
+          )}
           <Link
             to="/applicant/shows"
             className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium"

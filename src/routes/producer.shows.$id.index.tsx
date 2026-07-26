@@ -18,6 +18,7 @@ import {
   RotateCcw,
   Save,
   Search,
+  Star,
   StickyNote,
   Video as VideoIcon,
 } from "lucide-react";
@@ -50,6 +51,9 @@ function ShowApplicants() {
   const show = useStore((s) => s.shows.find((item) => item.id === id));
   const allApplications = useStore((s) => s.applications);
   const updateReview = useStore((s) => s.updateReview);
+  const updateReviews = useStore((s) => s.updateReviews);
+  const toggleShortlist = useStore((s) => s.toggleShortlist);
+  const setRating = useStore((s) => s.setRating);
   const getApplicantById = useStore((s) => s.getApplicantById);
 
   const [roleFilter, setRoleFilter] = useState("전체");
@@ -62,10 +66,15 @@ function ShowApplicants() {
   const [sort, setSort] = useState<SortKey>("recent");
   const [pending, setPending] = useState<Record<string, ReviewStatus>>({});
   const [statusNotice, setStatusNotice] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
+  const [bulkStatus, setBulkStatus] = useState<ReviewStatus>("검토 중");
+  const [compareOpen, setCompareOpen] = useState(false);
 
   if (!show) throw notFound();
 
   const applications = allApplications.filter((application) => application.showId === id);
+  const deadlineDays = daysUntil(show.deadline);
+  const deadlineLabel = deadlineDays >= 0 ? `D-${deadlineDays}` : "마감";
   const rows = useMemo<RowModel[]>(() => {
     const list = applications
       .map((app) => {
@@ -79,7 +88,7 @@ function ShowApplicants() {
             .map((roleId) => show.roles.find((role) => role.id === roleId)?.name)
             .filter(Boolean)
             .join(", "),
-          age: Number.isFinite(birthYear) ? 2026 - birthYear + 1 : null,
+          age: Number.isFinite(birthYear) ? new Date().getFullYear() - birthYear + 1 : null,
           height: Number.isFinite(height) ? height : null,
           mainCareer: applicant?.careers[0]
             ? `${applicant.careers[0].title} · ${applicant.careers[0].role}`
@@ -142,13 +151,6 @@ function ShowApplicants() {
   function saveOne(appId: string) {
     const nextStatus = pending[appId];
     if (!nextStatus) return;
-    if (
-      (nextStatus === "합격" || nextStatus === "불합격") &&
-      !window.confirm(`검토 상태를 '${nextStatus}'으로 변경하시겠습니까?`)
-    ) {
-      return;
-    }
-
     updateReview(appId, { reviewStatus: nextStatus });
     setPending((current) => {
       const next = { ...current };
@@ -160,6 +162,13 @@ function ShowApplicants() {
       minute: "2-digit",
     });
     setStatusNotice(`${nextStatus}(으)로 변경했습니다 · ${changedAt} · 캐스팅 담당`);
+  }
+
+  function applyBulkStatus() {
+    if (selected.length === 0) return;
+    updateReviews(selected, { reviewStatus: bulkStatus });
+    setStatusNotice(`${selected.length}건을 ${bulkStatus}(으)로 변경했습니다.`);
+    setSelected([]);
   }
 
   return (
@@ -176,7 +185,7 @@ function ShowApplicants() {
           <div className="text-xs text-muted-foreground">{show.producer}</div>
           <h1 className="truncate text-2xl font-semibold tracking-tight">{show.title}</h1>
           <div className="mt-1 text-sm text-muted-foreground">
-            지원 마감 {show.deadline} · D-{daysUntil(show.deadline)} · 오디션 {show.auditionDate}
+            지원 마감 {show.deadline} · {deadlineLabel} · 오디션 {show.auditionDate}
           </div>
         </div>
         <div className="flex flex-wrap gap-2 text-xs">
@@ -201,6 +210,47 @@ function ShowApplicants() {
         >
           <CheckCircle2 className="h-4 w-4" />
           {statusNotice}
+        </div>
+      )}
+
+      {selected.length > 0 && (
+        <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-card p-3 shadow-[var(--shadow-elev-2)]">
+          <strong className="mr-auto text-sm">{selected.length}명 선택</strong>
+          <label className="sr-only" htmlFor="bulk-review-status">
+            일괄 검토 상태
+          </label>
+          <select
+            id="bulk-review-status"
+            value={bulkStatus}
+            onChange={(event) => setBulkStatus(event.target.value as ReviewStatus)}
+            className="min-h-10 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            {REVIEW_STATUSES.map((status) => (
+              <option key={status}>{status}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={applyBulkStatus}
+            className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
+          >
+            상태 일괄 변경
+          </button>
+          <button
+            type="button"
+            onClick={() => setCompareOpen(true)}
+            disabled={selected.length < 2}
+            className="min-h-10 rounded-lg border border-input px-4 text-sm font-semibold disabled:opacity-40"
+          >
+            선택 비교
+          </button>
+          <button
+            type="button"
+            onClick={() => setSelected([])}
+            className="min-h-10 px-3 text-sm text-muted-foreground"
+          >
+            선택 해제
+          </button>
         </div>
       )}
 
@@ -309,135 +359,39 @@ function ShowApplicants() {
           </button>
         </div>
       ) : (
-        <>
-          <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card shadow-[var(--shadow-elev-1)] lg:block">
-            <table className="w-full min-w-[1040px] text-left text-sm">
-              <thead className="bg-surface text-xs text-muted-foreground">
-                <tr>
-                  <th className="px-4 py-3 font-medium">지원자</th>
-                  <th className="px-4 py-3 font-medium">지원 배역</th>
-                  <th className="px-4 py-3 font-medium">프로필</th>
-                  <th className="px-4 py-3 font-medium">주요 경력</th>
-                  <th className="px-4 py-3 font-medium">제출 자료</th>
-                  <th className="px-4 py-3 font-medium">지원일</th>
-                  <th className="px-4 py-3 font-medium">검토 상태</th>
-                  <th className="px-4 py-3 text-right font-medium">상세</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows.map((row) => (
-                  <ApplicantTableRow
-                    key={row.app.id}
-                    row={row}
-                    showId={show.id}
-                    pendingStatus={pending[row.app.id]}
-                    onPending={(status) =>
-                      setPending((current) => ({ ...current, [row.app.id]: status }))
-                    }
-                    onSave={() => saveOne(row.app.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div className="grid items-start gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          {rows.map((row) => (
+            <ApplicantCard
+              key={row.app.id}
+              row={row}
+              showId={show.id}
+              pendingStatus={pending[row.app.id]}
+              onPending={(status) =>
+                setPending((current) => ({ ...current, [row.app.id]: status }))
+              }
+              onSave={() => saveOne(row.app.id)}
+              selected={selected.includes(row.app.id)}
+              onSelect={(checked) =>
+                setSelected((current) =>
+                  checked
+                    ? [...new Set([...current, row.app.id])]
+                    : current.filter((appId) => appId !== row.app.id),
+                )
+              }
+              onToggleShortlist={() => toggleShortlist(row.app.id)}
+              onRating={(rating) => setRating(row.app.id, rating)}
+            />
+          ))}
+        </div>
+      )}
 
-          <div className="grid gap-3 lg:hidden">
-            {rows.map((row) => (
-              <ApplicantCard
-                key={row.app.id}
-                row={row}
-                showId={show.id}
-                pendingStatus={pending[row.app.id]}
-                onPending={(status) =>
-                  setPending((current) => ({ ...current, [row.app.id]: status }))
-                }
-                onSave={() => saveOne(row.app.id)}
-              />
-            ))}
-          </div>
-        </>
+      {compareOpen && (
+        <CompareDialog
+          rows={rows.filter((row) => selected.includes(row.app.id))}
+          onClose={() => setCompareOpen(false)}
+        />
       )}
     </div>
-  );
-}
-
-function ApplicantTableRow({
-  row,
-  showId,
-  pendingStatus,
-  onPending,
-  onSave,
-}: {
-  row: RowModel;
-  showId: string;
-  pendingStatus?: ReviewStatus;
-  onPending: (status: ReviewStatus) => void;
-  onSave: () => void;
-}) {
-  const currentStatus = pendingStatus ?? row.app.reviewStatus;
-  const isDirty = Boolean(pendingStatus && pendingStatus !== row.app.reviewStatus);
-
-  return (
-    <tr className={isDirty ? "bg-warning/5" : "hover:bg-surface/70"}>
-      <td className="px-4 py-3">
-        <div className="flex items-center gap-3">
-          <Avatar applicant={row.applicant} name={row.app.applicantName} />
-          <div>
-            <div className="font-semibold">{row.app.applicantName}</div>
-            <ReviewBadge status={row.app.reviewStatus} className="mt-1" />
-          </div>
-        </div>
-      </td>
-      <td className="max-w-40 px-4 py-3 font-medium">{row.roleNames || "-"}</td>
-      <td className="px-4 py-3 text-xs text-muted-foreground">
-        {row.applicant?.gender ?? "-"} · {row.age ? `${row.age}세` : "-"}
-        <br />
-        {row.applicant?.height ?? "-"}
-      </td>
-      <td className="max-w-52 px-4 py-3 text-xs">{row.mainCareer}</td>
-      <td className="px-4 py-3">
-        <MaterialSummary app={row.app} />
-      </td>
-      <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-        {row.app.submittedAt}
-      </td>
-      <td className="px-4 py-3">
-        <div className="flex min-w-56 items-center gap-2">
-          <label className="sr-only" htmlFor={`status-${row.app.id}`}>
-            {row.app.applicantName} 검토 상태
-          </label>
-          <select
-            id={`status-${row.app.id}`}
-            value={currentStatus}
-            onChange={(event) => onPending(event.target.value as ReviewStatus)}
-            className={`min-w-0 flex-1 rounded-md border bg-background px-2 py-1.5 text-xs ${
-              isDirty ? "border-warning" : "border-input"
-            }`}
-          >
-            {REVIEW_STATUSES.map((status) => (
-              <option key={status}>{status}</option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={onSave}
-            disabled={!isDirty}
-            className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-35"
-          >
-            <Save className="h-3.5 w-3.5" /> 저장
-          </button>
-        </div>
-      </td>
-      <td className="px-4 py-3 text-right">
-        <Link
-          to="/producer/shows/$id/applicants/$appId"
-          params={{ id: showId, appId: row.app.id }}
-          className="inline-flex items-center gap-1 rounded-md border border-input bg-background px-3 py-2 text-xs font-medium hover:bg-secondary"
-        >
-          <Eye className="h-3.5 w-3.5" /> 상세 보기
-        </Link>
-      </td>
-    </tr>
   );
 }
 
@@ -447,45 +401,111 @@ function ApplicantCard({
   pendingStatus,
   onPending,
   onSave,
+  selected,
+  onSelect,
+  onToggleShortlist,
+  onRating,
 }: {
   row: RowModel;
   showId: string;
   pendingStatus?: ReviewStatus;
   onPending: (status: ReviewStatus) => void;
   onSave: () => void;
+  selected: boolean;
+  onSelect: (checked: boolean) => void;
+  onToggleShortlist: () => void;
+  onRating: (rating: number) => void;
 }) {
   const currentStatus = pendingStatus ?? row.app.reviewStatus;
   const isDirty = Boolean(pendingStatus && pendingStatus !== row.app.reviewStatus);
 
   return (
     <article
-      className={`overflow-hidden rounded-2xl border bg-card ${
-        isDirty ? "border-warning/60" : "border-border"
+      className={`group overflow-hidden rounded-2xl border bg-card shadow-[var(--shadow-elev-1)] transition hover:shadow-[var(--shadow-elev-2)] ${
+        selected
+          ? "border-primary ring-2 ring-primary/15"
+          : isDirty
+            ? "border-warning/60"
+            : "border-border"
       }`}
     >
-      <div className="flex items-start gap-3 p-4">
-        <Avatar applicant={row.applicant} name={row.app.applicantName} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="font-semibold">{row.app.applicantName}</h2>
-            <ReviewBadge status={row.app.reviewStatus} />
+      <div className="grid grid-cols-[112px_minmax(0,1fr)] sm:grid-cols-[148px_minmax(0,1fr)]">
+        <ApplicantPortrait applicant={row.applicant} name={row.app.applicantName} />
+        <div className="min-w-0 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={selected}
+                onChange={(event) => onSelect(event.target.checked)}
+                aria-label={`${row.app.applicantName} 비교 대상으로 선택`}
+              />
+              <h2 className="text-lg font-semibold tracking-tight">{row.app.applicantName}</h2>
+            </label>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={onToggleShortlist}
+                aria-label={row.app.shortlisted ? "숏리스트에서 제거" : "숏리스트에 추가"}
+                aria-pressed={row.app.shortlisted}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg hover:bg-secondary"
+              >
+                <Star
+                  className={`h-4 w-4 ${
+                    row.app.shortlisted ? "fill-gold text-gold" : "text-muted-foreground"
+                  }`}
+                />
+              </button>
+              <ReviewBadge status={row.app.reviewStatus} />
+            </div>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
+          <div className="mt-1.5 text-xs text-muted-foreground">
             {row.applicant?.gender ?? "-"} · {row.age ? `${row.age}세` : "-"} ·{" "}
             {row.applicant?.height ?? "-"}
           </div>
-          <div className="mt-2 text-sm">
-            <span className="text-muted-foreground">지원 배역 </span>
-            <strong>{row.roleNames || "-"}</strong>
+          <div className="mt-4">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              지원 배역
+            </div>
+            <div className="mt-1 text-sm font-semibold">{row.roleNames || "-"}</div>
           </div>
-          <p className="mt-1 truncate text-xs text-muted-foreground">{row.mainCareer}</p>
+          <div className="mt-3">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              주요 경력
+            </div>
+            <p className="mt-1 line-clamp-2 text-xs leading-5 text-foreground/80">
+              {row.mainCareer}
+            </p>
+          </div>
         </div>
       </div>
-      <div className="flex items-center justify-between border-y border-border bg-surface px-4 py-2.5">
+      <div className="flex items-center justify-between border-y border-border bg-surface px-4 py-3">
         <MaterialSummary app={row.app} />
-        <span className="text-[11px] text-muted-foreground">{row.app.submittedAt}</span>
+        <span className="text-[11px] text-muted-foreground">지원 {row.app.submittedAt}</span>
       </div>
-      <div className="grid gap-2 p-4 sm:grid-cols-[1fr_auto_auto]">
+      <div className="flex items-center justify-between border-b border-border px-4 py-2">
+        <span className="text-xs text-muted-foreground">평가 점수</span>
+        <div className="flex" aria-label={`${row.app.applicantName} 평가 ${row.app.rating ?? 0}점`}>
+          {[1, 2, 3, 4, 5].map((rating) => (
+            <button
+              key={rating}
+              type="button"
+              onClick={() => onRating(rating)}
+              aria-label={`${rating}점`}
+              className="inline-flex h-8 w-8 items-center justify-center"
+            >
+              <Star
+                className={`h-4 w-4 ${
+                  rating <= (row.app.rating ?? 0)
+                    ? "fill-gold text-gold"
+                    : "text-muted-foreground/40"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-[1fr_auto_auto]">
         <label className="sr-only" htmlFor={`mobile-status-${row.app.id}`}>
           {row.app.applicantName} 검토 상태
         </label>
@@ -493,7 +513,7 @@ function ApplicantCard({
           id={`mobile-status-${row.app.id}`}
           value={currentStatus}
           onChange={(event) => onPending(event.target.value as ReviewStatus)}
-          className={`rounded-md border bg-background px-3 py-2 text-sm ${
+          className={`col-span-2 rounded-md border bg-background px-3 py-2 text-sm sm:col-span-1 ${
             isDirty ? "border-warning" : "border-input"
           }`}
         >
@@ -521,12 +541,125 @@ function ApplicantCard({
   );
 }
 
-function Avatar({ applicant, name }: { applicant: Applicant | undefined; name: string }) {
+function CompareDialog({ rows, onClose }: { rows: RowModel[]; onClose: () => void }) {
   return (
     <div
-      className="grid h-12 w-12 shrink-0 place-items-center rounded-xl text-base font-bold text-white shadow-sm"
+      className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="compare-title"
+    >
+      <div className="mx-auto my-8 max-w-6xl rounded-2xl bg-card p-5 shadow-2xl md:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 id="compare-title" className="text-xl font-semibold">
+              지원자 비교
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              배역, 경력, 제출 자료와 평가를 같은 기준으로 비교합니다.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-10 rounded-lg border border-input px-4 text-sm font-semibold"
+          >
+            닫기
+          </button>
+        </div>
+        <div className="mt-6 overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-sm">
+            <thead>
+              <tr>
+                <th className="border-b border-border p-3 text-left text-muted-foreground">
+                  비교 항목
+                </th>
+                {rows.map((row) => (
+                  <th key={row.app.id} className="border-b border-border p-3 text-left text-lg">
+                    {row.app.applicantName}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              <CompareRow label="지원 배역" rows={rows} value={(row) => row.roleNames} />
+              <CompareRow
+                label="기본 정보"
+                rows={rows}
+                value={(row) =>
+                  `${row.applicant?.gender ?? "-"} · ${row.age ? `${row.age}세` : "-"} · ${
+                    row.applicant?.height ?? "-"
+                  }`
+                }
+              />
+              <CompareRow label="주요 경력" rows={rows} value={(row) => row.mainCareer} />
+              <CompareRow
+                label="제출 자료"
+                rows={rows}
+                value={(row) =>
+                  `경력 ${row.app.selectedCareerIds.length} · 사진 ${row.app.selectedPhotoIds.length} · 영상 ${row.app.selectedVideoIds.length}`
+                }
+              />
+              <CompareRow
+                label="평가"
+                rows={rows}
+                value={(row) => `${row.app.rating ?? 0} / 5점`}
+              />
+              <CompareRow label="상태" rows={rows} value={(row) => row.app.reviewStatus} />
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CompareRow({
+  label,
+  rows,
+  value,
+}: {
+  label: string;
+  rows: RowModel[];
+  value: (row: RowModel) => string;
+}) {
+  return (
+    <tr>
+      <th className="border-b border-border bg-secondary/40 p-3 text-left">{label}</th>
+      {rows.map((row) => (
+        <td key={row.app.id} className="border-b border-border p-3 text-muted-foreground">
+          {value(row)}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function ApplicantPortrait({
+  applicant,
+  name,
+}: {
+  applicant: Applicant | undefined;
+  name: string;
+}) {
+  const photo = applicant?.photos.find((item) => item.isDefault) ?? applicant?.photos[0];
+
+  if (photo?.image) {
+    return (
+      <img
+        src={photo.image}
+        alt={`${name} 프로필`}
+        loading="lazy"
+        className="h-full min-h-40 w-full object-cover object-top sm:min-h-52"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="grid min-h-40 w-full place-items-center text-3xl font-bold text-white sm:min-h-52"
       style={{
-        background: applicant?.photos[0]?.color ?? "var(--primary)",
+        background: photo?.color ?? "var(--primary)",
       }}
       aria-label={`${name} 프로필 이미지 대체 영역`}
     >
