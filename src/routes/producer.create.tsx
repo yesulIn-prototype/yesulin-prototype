@@ -1,6 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Eye, Plus, Save, Send, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  CheckCircle2,
+  Eye,
+  FileImage,
+  ImagePlus,
+  LoaderCircle,
+  Plus,
+  RefreshCw,
+  Save,
+  Send,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { useStore, type AdditionalQuestion, type ShowRole } from "@/lib/store";
 
 export const Route = createFileRoute("/producer/create")({
@@ -22,6 +36,13 @@ const ITEM_OPTIONS = [
 ] as const;
 
 type ItemDraft = { key: string; required: boolean };
+type OcrStatus = "idle" | "reading" | "analyzing" | "complete" | "error";
+
+const MOCK_POSTER_IMAGE = "/images/editorial/company-connect-restaurant.jpg";
+const MOCK_SOURCE_URL =
+  "https://otr.co.kr/audition/?board_name=audition&search_field=fn_user_pid&search_text=2444&list_type=list&lang=ko_KR&vid=21547";
+const MOCK_POSTER_NAME = "[연극식당]매일이 크리스마스_배우오디션공고.png";
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 
 const emptyRole = (): ShowRole => ({
   id: crypto.randomUUID(),
@@ -45,6 +66,10 @@ function CreatePosting() {
   const [rehearsalPeriod, setRehearsalPeriod] = useState("");
   const [showPeriod, setShowPeriod] = useState("");
   const [roles, setRoles] = useState<ShowRole[]>([emptyRole()]);
+  const [posterImage, setPosterImage] = useState("");
+  const [posterFileName, setPosterFileName] = useState("");
+  const [ocrStatus, setOcrStatus] = useState<OcrStatus>("idle");
+  const [ocrMessage, setOcrMessage] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([
     { key: "기본 프로필", required: true },
     { key: "경력", required: true },
@@ -54,8 +79,121 @@ function CreatePosting() {
   const [preview, setPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
+  const analysisTimer = useRef<ReturnType<typeof window.setTimeout> | null>(null);
 
   const validRoles = useMemo(() => roles.filter((role) => role.name.trim()), [roles]);
+  const isAnalyzing = ocrStatus === "reading" || ocrStatus === "analyzing";
+  const isOcrComplete = ocrStatus === "complete";
+
+  useEffect(
+    () => () => {
+      if (analysisTimer.current) window.clearTimeout(analysisTimer.current);
+    },
+    [],
+  );
+
+  function applyMockResult() {
+    const sharedRequirement =
+      "전 배역 트리플 캐스트 · 전체 연습 및 공연 일정 참여 · 관객과 열린 태도로 소통 가능한 배우";
+
+    setTitle("연극 식당: 매일이 크리스마스");
+    setProducer("컴퍼니 연결 × 남극장");
+    setKind("연극");
+    setDescription(
+      "세상의 모든 숫자가 사라진 날, 자신의 식당을 매일 크리스마스로 꾸미는 남자와 크리스마스에 운명을 만날 것이라 믿는 여자가 서로의 하루가 되어가는 사랑스러운 로맨틱 코미디입니다. 공연 중 다이닝 씨어터 형식의 음식 체험 프로그램과 관객과의 직접적인 소통 및 인터랙션이 포함됩니다.",
+    );
+    setVenue("남극장");
+    setCompensation("개별 협의");
+    setDeadline("2026.07.31 20:00");
+    setAuditionDate("2026.08.03 – 2026.08.05");
+    setRehearsalPeriod("2026.08.24부터 평일 13:00–17:00");
+    setShowPeriod("2026.10.07 – 2027.01.10");
+    setRoles([
+      {
+        id: crypto.randomUUID(),
+        name: "남자 역",
+        description:
+          "숫자가 사라진 뒤, 운영하던 레스토랑을 매일 크리스마스로 꾸미고 있는 사장. 진지하고 조금 너드스럽다.",
+        requirements: sharedRequirement,
+        allowMultiple: true,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "여자 역",
+        description: "크리스마스에 운명을 만나게 될 것이라고 믿는 사람. 쾌활하고 시원시원하다.",
+        requirements: sharedRequirement,
+        allowMultiple: true,
+      },
+      {
+        id: crypto.randomUUID(),
+        name: "멀티 역",
+        description:
+          "옆가게 사장, 단골손님, 배달기사, 구청 직원, 청소업체 직원, 사진사, 영화관 직원, 꽃집 사장, 뉴스 앵커, 정부 직원 등.",
+        requirements: `${sharedRequirement} · 빠른 인물 전환과 다양한 캐릭터 표현`,
+        allowMultiple: true,
+      },
+    ]);
+    setItems([
+      { key: "기본 프로필", required: true },
+      { key: "경력", required: true },
+      { key: "정면 프로필 사진", required: true },
+      { key: "연기 영상", required: true },
+      { key: "노래 영상", required: false },
+    ]);
+    setQuestions([
+      {
+        id: crypto.randomUUID(),
+        question: "지원 배역과 해당 배역을 선택한 이유를 작성해 주세요.",
+        type: "긴 답변",
+      },
+      {
+        id: crypto.randomUUID(),
+        question: "전체 공연 및 연습 일정에 참여할 수 있나요?",
+        type: "참여 가능 여부",
+        options: ["가능", "일부 협의 필요", "불가"],
+      },
+    ]);
+    setErrors([]);
+    setNotice("");
+  }
+
+  function startMockAnalysis(image: string, fileName: string) {
+    if (analysisTimer.current) window.clearTimeout(analysisTimer.current);
+    setPosterImage(image);
+    setPosterFileName(fileName);
+    setOcrStatus("analyzing");
+    setOcrMessage("이미지에서 일정, 배역, 지원 조건을 찾고 있어요.");
+
+    analysisTimer.current = window.setTimeout(() => {
+      applyMockResult();
+      setOcrStatus("complete");
+      setOcrMessage("공연 정보, 모집 배역, 제출 자료를 자동으로 채웠습니다.");
+      analysisTimer.current = null;
+    }, 1300);
+  }
+
+  async function processImage(file: File) {
+    if (!file.type.startsWith("image/")) {
+      setOcrStatus("error");
+      setOcrMessage("PNG, JPG 또는 WEBP 이미지 파일을 선택해 주세요.");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setOcrStatus("error");
+      setOcrMessage("이미지는 10MB 이하로 올려 주세요.");
+      return;
+    }
+
+    setOcrStatus("reading");
+    setOcrMessage("이미지를 불러오고 있어요.");
+    try {
+      const image = await fileToDataUrl(file);
+      startMockAnalysis(image, file.name);
+    } catch {
+      setOcrStatus("error");
+      setOcrMessage("이미지를 읽지 못했습니다. 다른 파일로 다시 시도해 주세요.");
+    }
+  }
 
   function validate(forPublish: boolean) {
     if (!forPublish) return [];
@@ -88,7 +226,10 @@ function CreatePosting() {
       showPeriod,
       roles: validRoles.length > 0 ? validRoles : roles,
       posterColor: "#171717",
-      posterImage: "/images/editorial/poster-audition-stage.jpg",
+      posterImage,
+      posterPosition: "top",
+      sourceUrl: isOcrComplete ? MOCK_SOURCE_URL : undefined,
+      sourceLabel: isOcrComplete ? "OTR 원문 공고" : undefined,
       requiredItems: items
         .filter((item) => item.required)
         .map((item) => ({
@@ -171,10 +312,163 @@ function CreatePosting() {
 
       <div className={`mt-6 grid gap-6 ${preview ? "xl:grid-cols-[minmax(0,1fr)_380px]" : ""}`}>
         <div className="space-y-6">
+          <section
+            aria-busy={isAnalyzing}
+            className="overflow-hidden rounded-2xl border border-information/25 bg-card shadow-[var(--shadow-elev-1)]"
+          >
+            <div className="border-b border-border bg-information/[0.06] p-5 md:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-information text-white">
+                    <Sparkles className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-lg font-semibold">이미지로 공고 자동 작성</h2>
+                      <span className="rounded-full border border-information/20 bg-background px-2 py-0.5 text-[11px] font-semibold text-information">
+                        MOCK OCR
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      포스터나 상세 이미지를 올리면 공연 정보와 모집 조건을 항목별로 정리합니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 p-5 md:grid-cols-[220px_minmax(0,1fr)] md:p-6">
+              <div
+                className="group relative flex h-64 items-center justify-center overflow-hidden rounded-xl border border-dashed border-input bg-surface"
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const file = event.dataTransfer.files[0];
+                  if (file) void processImage(file);
+                }}
+              >
+                {posterImage ? (
+                  <img
+                    src={posterImage}
+                    alt={`${posterFileName} 미리보기`}
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <label
+                    htmlFor="posting-image"
+                    className="flex h-full w-full cursor-pointer flex-col items-center justify-center p-5 text-center"
+                  >
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary">
+                      <ImagePlus className="h-5 w-5" />
+                    </span>
+                    <span className="mt-3 text-sm font-semibold">이미지를 선택하거나 끌어놓기</span>
+                    <span className="mt-1 text-xs text-muted-foreground">
+                      PNG, JPG, WEBP · 최대 10MB
+                    </span>
+                  </label>
+                )}
+                {posterImage && (
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent p-3 pt-8 text-xs text-white">
+                    <span className="block truncate">{posterFileName}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex min-w-0 flex-col">
+                <div className="grid gap-2 sm:grid-cols-3">
+                  <OcrStep number="1" label="상세 이미지 업로드" active={ocrStatus !== "idle"} />
+                  <OcrStep
+                    number="2"
+                    label="텍스트와 조건 분석"
+                    active={isAnalyzing || isOcrComplete}
+                  />
+                  <OcrStep number="3" label="등록 항목 자동 입력" active={isOcrComplete} />
+                </div>
+
+                <div
+                  role="status"
+                  className={`mt-4 flex min-h-16 items-center gap-3 rounded-xl border p-3 text-sm ${
+                    ocrStatus === "error"
+                      ? "border-destructive/25 bg-destructive/5 text-destructive"
+                      : isOcrComplete
+                        ? "border-success/25 bg-success/5 text-success"
+                        : "border-border bg-surface text-muted-foreground"
+                  }`}
+                >
+                  {isAnalyzing ? (
+                    <LoaderCircle className="h-5 w-5 shrink-0 animate-spin text-information" />
+                  ) : isOcrComplete ? (
+                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                  ) : (
+                    <FileImage className="h-5 w-5 shrink-0" />
+                  )}
+                  <div>
+                    <div className="font-semibold">
+                      {isAnalyzing
+                        ? "AI가 공고를 분석하고 있습니다"
+                        : isOcrComplete
+                          ? "자동 입력이 완료되었습니다"
+                          : ocrStatus === "error"
+                            ? "이미지를 확인해 주세요"
+                            : "이미지를 올리면 분석을 시작합니다"}
+                    </div>
+                    <div className="mt-0.5 text-xs opacity-80">
+                      {ocrMessage ||
+                        "Mock에서는 예시 공고의 분석 결과를 적용하며, 모든 값은 직접 수정할 수 있습니다."}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <label
+                    htmlFor="posting-image"
+                    className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground ${
+                      isAnalyzing ? "pointer-events-none opacity-50" : ""
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {posterImage ? "다른 이미지 업로드" : "이미지 업로드"}
+                  </label>
+                  <input
+                    id="posting-image"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    disabled={isAnalyzing}
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) void processImage(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={isAnalyzing}
+                    onClick={() => startMockAnalysis(MOCK_POSTER_IMAGE, MOCK_POSTER_NAME)}
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold disabled:opacity-50"
+                  >
+                    <Sparkles className="h-4 w-4 text-information" />
+                    예시 공고로 체험
+                  </button>
+                  {posterImage && isOcrComplete && (
+                    <button
+                      type="button"
+                      onClick={() => startMockAnalysis(posterImage, posterFileName)}
+                      className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-muted-foreground hover:bg-secondary"
+                    >
+                      <RefreshCw className="h-4 w-4" /> 다시 분석
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+
           <FormSection
             number="01"
             title="공연 기본 정보"
             description="탐색 목록과 공고 상단에 노출됩니다."
+            action={isOcrComplete ? <AutoFilledBadge /> : undefined}
           >
             <div className="grid gap-4 md:grid-cols-2">
               <Field id="show-title" label="공연명" value={title} onChange={setTitle} required />
@@ -210,17 +504,17 @@ function CreatePosting() {
               <Field
                 id="deadline"
                 label="지원 마감일"
-                type="date"
                 value={deadline}
                 onChange={setDeadline}
+                placeholder="2026.07.31 20:00"
                 required
               />
               <Field
                 id="audition-date"
                 label="오디션 예정일"
-                type="date"
                 value={auditionDate}
                 onChange={setAuditionDate}
+                placeholder="2026.08.03 – 2026.08.05"
               />
               <Field
                 id="rehearsal-period"
@@ -257,13 +551,16 @@ function CreatePosting() {
             title="모집 배역"
             description="지원자는 여기에서 지원할 배역을 선택합니다."
             action={
-              <button
-                type="button"
-                onClick={() => setRoles((current) => [...current, emptyRole()])}
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-secondary px-3 text-sm font-semibold"
-              >
-                <Plus className="h-4 w-4" /> 배역 추가
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {isOcrComplete && <AutoFilledBadge />}
+                <button
+                  type="button"
+                  onClick={() => setRoles((current) => [...current, emptyRole()])}
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-secondary px-3 text-sm font-semibold"
+                >
+                  <Plus className="h-4 w-4" /> 배역 추가
+                </button>
+              </div>
             }
           >
             <div className="space-y-4">
@@ -337,6 +634,7 @@ function CreatePosting() {
             number="03"
             title="제출 자료"
             description="정말 필요한 자료만 요청하면 지원 완료율이 높아집니다."
+            action={isOcrComplete ? <AutoFilledBadge /> : undefined}
           >
             <div className="grid gap-3 sm:grid-cols-2">
               {ITEM_OPTIONS.map((option) => {
@@ -389,22 +687,25 @@ function CreatePosting() {
             title="추가 질문"
             description="심사에 실제로 사용할 질문만 추가하세요."
             action={
-              <button
-                type="button"
-                onClick={() =>
-                  setQuestions((current) => [
-                    ...current,
-                    {
-                      id: crypto.randomUUID(),
-                      question: "",
-                      type: "긴 답변",
-                    },
-                  ])
-                }
-                className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-secondary px-3 text-sm font-semibold"
-              >
-                <Plus className="h-4 w-4" /> 질문 추가
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {isOcrComplete && <AutoFilledBadge />}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuestions((current) => [
+                      ...current,
+                      {
+                        id: crypto.randomUUID(),
+                        question: "",
+                        type: "긴 답변",
+                      },
+                    ])
+                  }
+                  className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-secondary px-3 text-sm font-semibold"
+                >
+                  <Plus className="h-4 w-4" /> 질문 추가
+                </button>
+              </div>
             }
           >
             {questions.length === 0 ? (
@@ -479,6 +780,11 @@ function CreatePosting() {
             <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
               Applicant preview
             </div>
+            {posterImage && (
+              <div className="mt-3 h-48 overflow-hidden rounded-xl bg-surface">
+                <img src={posterImage} alt="" className="h-full w-full object-cover object-top" />
+              </div>
+            )}
             <h2 className="mt-3 text-xl font-semibold">{title || "공연명"}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{producer || "제작사"}</p>
             <dl className="mt-5 grid gap-3 text-sm">
@@ -615,6 +921,35 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
   );
 }
 
+function OcrStep({ number, label, active }: { number: string; label: string; active: boolean }) {
+  return (
+    <div
+      className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium ${
+        active
+          ? "border-information/25 bg-information/[0.06] text-foreground"
+          : "border-border text-muted-foreground"
+      }`}
+    >
+      <span
+        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+          active ? "bg-information text-white" : "bg-secondary"
+        }`}
+      >
+        {number}
+      </span>
+      {label}
+    </div>
+  );
+}
+
+function AutoFilledBadge() {
+  return (
+    <span className="inline-flex min-h-7 items-center gap-1 rounded-full border border-information/20 bg-information/[0.06] px-2.5 text-[11px] font-semibold text-information">
+      <Sparkles className="h-3 w-3" /> AI 자동 입력
+    </span>
+  );
+}
+
 function updateRole(
   roles: ShowRole[],
   setRoles: React.Dispatch<React.SetStateAction<ShowRole[]>>,
@@ -634,4 +969,13 @@ function toRequirementKey(label: string) {
   if (label === "경력") return "career";
   if (label === "지원 동기") return "motivation";
   return label.toLowerCase().replace(/\s+/g, "-");
+}
+
+function fileToDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
