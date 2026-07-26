@@ -916,6 +916,7 @@ type Store = {
   addCareer: (career: Omit<Career, "id">) => void;
   updateApplicant: (patch: Partial<Applicant>) => void;
   saveShow: (show: Omit<Show, "id" | "updatedAt"> & { id?: string }) => string;
+  removeShow: (id: string) => void;
 
   submitApplication: (
     app: Omit<
@@ -1112,6 +1113,13 @@ export const useStore = create<Store>()(
         }));
         return id;
       },
+
+      removeShow: (id) =>
+        set((state) => ({
+          shows: state.shows.filter((show) => show.id !== id),
+          applications: state.applications.filter((application) => application.showId !== id),
+          favoriteShowIds: state.favoriteShowIds.filter((showId) => showId !== id),
+        })),
 
       submitApplication: (application) => {
         const id = newId("application");

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
   useStore,
@@ -20,8 +20,21 @@ import {
   Search,
   Star,
   StickyNote,
+  Trash2,
   Video as VideoIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/producer/shows/$id/")({
   component: ShowApplicants,
@@ -48,8 +61,10 @@ type RowModel = {
 
 function ShowApplicants() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const show = useStore((s) => s.shows.find((item) => item.id === id));
   const allApplications = useStore((s) => s.applications);
+  const removeShow = useStore((s) => s.removeShow);
   const updateReview = useStore((s) => s.updateReview);
   const updateReviews = useStore((s) => s.updateReviews);
   const toggleShortlist = useStore((s) => s.toggleShortlist);
@@ -171,6 +186,11 @@ function ShowApplicants() {
     setSelected([]);
   }
 
+  async function deleteShow() {
+    await navigate({ to: "/producer/shows" });
+    removeShow(id);
+  }
+
   return (
     <div className="space-y-6">
       <Link
@@ -188,18 +208,50 @@ function ShowApplicants() {
             지원 마감 {show.deadline} · {deadlineLabel} · 오디션 {show.auditionDate}
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs">
-          <StatChip label="전체" value={applications.length} />
-          <StatChip
-            label="미확인"
-            value={applications.filter((app) => app.reviewStatus === "미확인").length}
-            accent="warning"
-          />
-          <StatChip
-            label="오디션 대상"
-            value={applications.filter((app) => app.reviewStatus === "오디션 대상").length}
-            accent="success"
-          />
+        <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
+          <div className="flex flex-wrap gap-2">
+            <StatChip label="전체" value={applications.length} />
+            <StatChip
+              label="미확인"
+              value={applications.filter((app) => app.reviewStatus === "미확인").length}
+              accent="warning"
+            />
+            <StatChip
+              label="오디션 대상"
+              value={applications.filter((app) => app.reviewStatus === "오디션 대상").length}
+              accent="success"
+            />
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 /> 공고 삭제
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>공고를 삭제할까요?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  ‘{show.title}’ 공고와 지원서 {applications.length}건이 함께 삭제됩니다. 이 작업은
+                  되돌릴 수 없습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>취소</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={deleteShow}
+                >
+                  삭제
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
