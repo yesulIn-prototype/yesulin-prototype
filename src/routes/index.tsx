@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Building2, CalendarCheck2, Check, Files, Sparkles, Users } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 
+import { trackAnalyticsEvent, type UserRole } from "@/lib/analytics";
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -159,6 +161,7 @@ function RoleSelect() {
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             <RoleCard
               to="/applicant"
+              userRole="applicant"
               number="01"
               eyebrow="For Performers"
               title="공연 지원자"
@@ -176,6 +179,7 @@ function RoleSelect() {
             />
             <RoleCard
               to="/producer"
+              userRole="producer"
               number="02"
               eyebrow="For Casting"
               title="공연사 담당자"
@@ -261,6 +265,7 @@ function ValueStat({
 function RoleCard({
   to,
   number,
+  userRole,
   eyebrow,
   title,
   subtitle,
@@ -273,6 +278,7 @@ function RoleCard({
 }: {
   to: "/applicant" | "/producer";
   number: string;
+  userRole: Exclude<UserRole, "unknown">;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -286,6 +292,12 @@ function RoleCard({
   return (
     <Link
       to={to}
+      onClick={() =>
+        trackAnalyticsEvent("role_selected", {
+          user_role: userRole,
+          entry_point: "landing",
+        })
+      }
       className="group overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-[var(--shadow-elev-1)] transition duration-300 hover:-translate-y-1 hover:shadow-[var(--shadow-elev-3)]"
     >
       <div className="relative overflow-hidden">

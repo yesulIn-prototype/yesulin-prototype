@@ -1,0 +1,8 @@
+날짜,순서,구분,변경사항,상태,영향 범위,다음 작업,관련 링크
+2026-07-26,10,설계,지원자·공연사 핵심 퍼널 이벤트 계약 v1 정의,완료,전체 이벤트,운영 전 이벤트 계약 재검토,docs/analytics.md
+2026-07-26,20,코드,화면에서 GA4를 직접 호출하지 않는 공통 dataLayer 계층 구현,완료,프론트엔드 분석 코드,실제 API 도입 후 성공 응답 기준 재확인,src/lib/analytics.ts
+2026-07-26,30,GTM,Google tag·공통 GA4 이벤트 태그·트리거·변수 설정,초안 완료,GTM-MVS5H47K,검증 완료 후 컨테이너 게시,https://tagmanager.google.com/
+2026-07-26,40,검증,Tag Assistant에서 page_view와 GA4 태그 실행 확인,완료,page_view,주요 업무 이벤트도 순차 검증,https://tagassistant.google.com/
+2026-07-26,50,배포,GTM·GA4 분석 코드 Draft PR 생성,검토 중,PR #5,리뷰 후 병합하고 Vercel 환경변수 설정,https://github.com/yesulIn-prototype/yesulin-prototype/pull/5
+2026-07-26,60,이벤트 추가,공고 게시 성공 이벤트 recruitment_created 구현,완료,공연사 공고 작성 퍼널,GA4에서 핵심 이벤트로 지정,src/routes/producer.create.tsx
+2026-07-26,70,문서,팀 공유용 이벤트 표와 변경 이력으로 CSV 단순화,완료,Notion 데이터베이스,Notion에 2개 데이터베이스로 가져오기,docs/analytics-data/

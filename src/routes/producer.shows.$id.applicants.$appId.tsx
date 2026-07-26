@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore, type ReviewStatus } from "@/lib/store";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { PhotoTile, VideoTile } from "@/components/poster";
 import { ReviewBadge } from "@/components/status-badge";
 import {
@@ -37,11 +38,26 @@ function ApplicantDetail() {
   const [pendingStatus, setPendingStatus] = useState<ReviewStatus | null>(null);
   const [memoDraft, setMemoDraft] = useState(app?.memo ?? "");
   const [feedback, setFeedback] = useState("");
+  const trackedApplicantKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!show || !app) return;
+    const trackingKey = `${show.id}:${app.id}`;
+    if (trackedApplicantKey.current === trackingKey) return;
+    trackedApplicantKey.current = trackingKey;
+    trackAnalyticsEvent("applicant_detail_viewed", {
+      show_id: show.id,
+      review_status: app.reviewStatus,
+    });
+  }, [app, show]);
 
   if (!show || !app) throw notFound();
   const applicant = getApplicantById(app.applicantId);
   if (!applicant) throw notFound();
 
+  const showId = show.id;
+  const applicationId = app.id;
+  const currentReviewStatus = app.reviewStatus;
   const roleName = app.roleIds.map((r) => show.roles.find((sr) => sr.id === r)?.name).join(", ");
   const careers = applicant.careers.filter((c) => app.selectedCareerIds.includes(c.id));
   const photos = applicant.photos.filter((p) => app.selectedPhotoIds.includes(p.id));
@@ -60,7 +76,12 @@ function ApplicantDetail() {
     ) {
       return;
     }
-    updateReview(app.id, { reviewStatus: pendingStatus });
+    updateReview(applicationId, { reviewStatus: pendingStatus });
+    trackAnalyticsEvent("review_status_changed", {
+      show_id: showId,
+      previous_status: currentReviewStatus,
+      review_status: pendingStatus,
+    });
     const changedAt = new Date().toLocaleTimeString("ko-KR", {
       hour: "numeric",
       minute: "2-digit",
@@ -70,7 +91,7 @@ function ApplicantDetail() {
   }
 
   function saveMemo() {
-    updateReview(app.id, { memo: memoDraft });
+    updateReview(applicationId, { memo: memoDraft });
     setFeedback("내부 메모를 저장했습니다");
   }
 
