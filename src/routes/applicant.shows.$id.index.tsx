@@ -1,5 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { useStore, daysUntil } from "@/lib/store";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
 import {
@@ -23,6 +25,17 @@ function ShowDetail() {
   const myApp = useStore((s) =>
     s.applications.find((a) => a.showId === id && a.applicantId === "me"),
   );
+  const trackedShowId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!show || trackedShowId.current === show.id) return;
+    trackedShowId.current = show.id;
+    trackAnalyticsEvent("show_detail_viewed", {
+      show_id: show.id,
+      show_status: show.status,
+      has_existing_application: Boolean(myApp),
+    });
+  }, [myApp, show]);
 
   if (!show) throw notFound();
   const isOpen = show.status === "모집 중";

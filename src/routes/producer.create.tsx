@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Eye, Plus, Save, Send, Trash2, X } from "lucide-react";
 import { useStore, type AdditionalQuestion, type ShowRole } from "@/lib/store";
+
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/producer/create")({
   component: CreatePosting,
@@ -54,6 +56,15 @@ function CreatePosting() {
   const [preview, setPreview] = useState(false);
   const [notice, setNotice] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
+  const trackedStart = useRef(false);
+
+  useEffect(() => {
+    if (trackedStart.current) return;
+    trackedStart.current = true;
+    trackAnalyticsEvent("recruitment_create_started", {
+      entry_point: "producer_console",
+    });
+  }, []);
 
   const validRoles = useMemo(() => roles.filter((role) => role.name.trim()), [roles]);
 
@@ -115,6 +126,19 @@ function CreatePosting() {
     setNotice("임시 저장했습니다. 이 브라우저에서 이어서 편집할 수 있습니다.");
   }
 
+  function togglePreview() {
+    const nextPreview = !preview;
+    setPreview(nextPreview);
+
+    if (nextPreview) {
+      trackAnalyticsEvent("recruitment_previewed", {
+        role_count: roles.length,
+        submission_item_count: items.length,
+        additional_question_count: questions.filter((question) => question.question.trim()).length,
+      });
+    }
+  }
+
   return (
     <form
       noValidate
@@ -136,7 +160,7 @@ function CreatePosting() {
         </div>
         <button
           type="button"
-          onClick={() => setPreview((value) => !value)}
+          onClick={togglePreview}
           aria-expanded={preview}
           className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-input bg-background px-4 text-sm font-semibold hover:bg-secondary"
         >

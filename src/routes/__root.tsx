@@ -9,6 +9,8 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, useState, type ReactNode } from "react";
 
+import { AnalyticsPageView } from "@/components/analytics-page-view";
+import { getGoogleTagManagerId } from "@/lib/analytics";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -123,12 +125,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const gtmId = getGoogleTagManagerId();
+
   return (
     <html lang="ko">
       <head>
         <HeadContent />
+        {gtmId && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','${gtmId}');`,
+            }}
+          />
+        )}
       </head>
       <body>
+        {gtmId && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${gtmId}`}
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+              title="Google Tag Manager"
+            />
+          </noscript>
+        )}
         {children}
         <Scripts />
       </body>
@@ -144,7 +166,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {hydrated ? (
-        <Outlet />
+        <>
+          <AnalyticsPageView />
+          <Outlet />
+        </>
       ) : (
         <div style={{ minHeight: "100vh", background: "var(--background)" }} />
       )}

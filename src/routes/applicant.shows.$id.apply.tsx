@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useStore } from "@/lib/store";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 import { PhotoTile, VideoTile } from "@/components/poster";
 import { Check, ChevronLeft, ChevronRight, Info, AlertTriangle, Sparkles } from "lucide-react";
 
@@ -28,6 +29,7 @@ function ApplyWizard() {
   const show = useStore((s) => s.shows.find((sh) => sh.id === id));
   const applicant = useStore((s) => s.applicant);
   const submitApplication = useStore((s) => s.submitApplication);
+  const trackedApplicationId = useRef<string | null>(null);
 
   const [step, setStep] = useState(0);
   const [roleIds, setRoleIds] = useState<string[]>([]);
@@ -145,7 +147,17 @@ function ApplyWizard() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [confirmDialog.open]);
 
+  useEffect(() => {
+    if (!show || trackedApplicationId.current === show.id) return;
+    trackedApplicationId.current = show.id;
+    trackAnalyticsEvent("application_started", {
+      show_id: show.id,
+      required_item_count: show.requiredItems.length,
+    });
+  }, [show]);
+
   if (!show) throw notFound();
+  const showId = show.id;
 
   const photoRequirements = [...show.requiredItems, ...show.optionalItems].filter((r) =>
     r.key.startsWith("photo-"),
@@ -208,7 +220,7 @@ function ApplyWizard() {
 
   function submit() {
     submitApplication({
-      showId: show!.id,
+      showId,
       roleIds,
       selectedCareerIds: selectedCareers.map((c) => c.id),
       selectedPhotoIds: Object.values(photoMap),
@@ -219,7 +231,15 @@ function ApplyWizard() {
       motivation,
     });
     window.localStorage.removeItem(draftKey);
-    navigate({ to: "/applicant/shows/$id/complete", params: { id: show!.id } });
+    trackAnalyticsEvent("application_submitted", {
+      show_id: showId,
+      role_count: roleIds.length,
+      career_count: selectedCareers.length,
+      photo_count: Object.values(photoMap).length,
+      video_count: Object.values(videoMap).length,
+      used_saved_profile: true,
+    });
+    navigate({ to: "/applicant/shows/$id/complete", params: { id: showId } });
   }
 
   function goToStep(next: number) {
@@ -231,9 +251,20 @@ function ApplyWizard() {
     const currentMissing = stepMissing[step] ?? [];
     if (currentMissing.length > 0) {
       dialogTriggerRef.current = document.activeElement as HTMLElement | null;
+      trackAnalyticsEvent("application_validation_failed", {
+        show_id: showId,
+        step_number: step + 1,
+        step_name: STEPS[step],
+        missing_required_count: currentMissing.length,
+      });
       setConfirmDialog({ open: true, missing: currentMissing });
       return;
     }
+    trackAnalyticsEvent("application_step_completed", {
+      show_id: showId,
+      step_number: step + 1,
+      step_name: STEPS[step],
+    });
     goToStep(step + 1);
   }
 
