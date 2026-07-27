@@ -15,7 +15,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useStore, type AdditionalQuestion, type ShowRole } from "@/lib/store";
+import { getPerformanceId, useStore, type AdditionalQuestion, type ShowRole } from "@/lib/store";
 
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
@@ -57,14 +57,23 @@ const emptyRole = (): ShowRole => ({
 function CreatePosting() {
   const navigate = useNavigate();
   const saveShow = useStore((state) => state.saveShow);
+  const shows = useStore((state) => state.shows);
+  const performances = useMemo(() => {
+    const groups = new Map<string, string>();
+    for (const show of shows) groups.set(getPerformanceId(show), show.title);
+    return [...groups.entries()];
+  }, [shows]);
+  const [performanceId, setPerformanceId] = useState("new");
   const [title, setTitle] = useState("");
-  const [producer, setProducer] = useState("라이트스테이지");
+  const [postingTitle, setPostingTitle] = useState("");
+  const [producer, setProducer] = useState("컴퍼니연결");
   const [kind, setKind] = useState("뮤지컬");
   const [description, setDescription] = useState("");
   const [venue, setVenue] = useState("");
   const [compensation, setCompensation] = useState("");
   const [deadline, setDeadline] = useState("");
   const [auditionDate, setAuditionDate] = useState("");
+  const [resultAnnouncementDate, setResultAnnouncementDate] = useState("");
   const [rehearsalPeriod, setRehearsalPeriod] = useState("");
   const [showPeriod, setShowPeriod] = useState("");
   const [roles, setRoles] = useState<ShowRole[]>([emptyRole()]);
@@ -117,6 +126,7 @@ function CreatePosting() {
     setCompensation("개별 협의");
     setDeadline("2026.07.31 20:00");
     setAuditionDate("2026.08.03 – 2026.08.05");
+    setResultAnnouncementDate("2026.08.10");
     setRehearsalPeriod("2026.08.24부터 평일 13:00–17:00");
     setShowPeriod("2026.10.07 – 2027.01.10");
     setRoles([
@@ -212,6 +222,7 @@ function CreatePosting() {
     if (!title.trim()) next.push("공연명을 입력해 주세요.");
     if (!producer.trim()) next.push("제작사를 입력해 주세요.");
     if (!deadline) next.push("지원 마감일을 선택해 주세요.");
+    if (!resultAnnouncementDate) next.push("결과 발표일을 입력해 주세요.");
     if (validRoles.length === 0) next.push("한 개 이상의 모집 배역을 입력해 주세요.");
     return next;
   }
@@ -224,8 +235,20 @@ function CreatePosting() {
       return;
     }
 
+    const linkedPostings = shows.filter((show) => getPerformanceId(show) === performanceId);
+    const recruitmentRound =
+      performanceId === "new"
+        ? 1
+        : Math.max(0, ...linkedPostings.map((show) => show.recruitmentRound ?? 1)) + 1;
+    const resolvedPerformanceId =
+      performanceId === "new" ? `performance-${crypto.randomUUID()}` : performanceId;
+
     const showId = saveShow({
+      performanceId: resolvedPerformanceId,
       title: title.trim() || "제목 없는 공고",
+      postingTitle:
+        postingTitle.trim() || `${recruitmentRound}차 ${kind === "연극" ? "배우" : "출연진"} 모집`,
+      recruitmentRound,
       producer: producer.trim(),
       kind,
       description,
@@ -233,6 +256,7 @@ function CreatePosting() {
       compensation: compensation || "협의",
       deadline: deadline.replaceAll("-", "."),
       auditionDate: auditionDate.replaceAll("-", "."),
+      resultAnnouncementDate: resultAnnouncementDate.replaceAll("-", "."),
       rehearsalPeriod,
       showPeriod,
       roles: validRoles.length > 0 ? validRoles : roles,
@@ -501,7 +525,47 @@ function CreatePosting() {
             action={isOcrComplete ? <AutoFilledBadge /> : undefined}
           >
             <div className="grid gap-4 md:grid-cols-2">
+              <label
+                className="grid gap-1.5 text-sm font-medium md:col-span-2"
+                htmlFor="performance-link"
+              >
+                공고를 연결할 공연
+                <select
+                  id="performance-link"
+                  value={performanceId}
+                  onChange={(event) => {
+                    const nextPerformanceId = event.target.value;
+                    setPerformanceId(nextPerformanceId);
+                    const linkedShow = shows.find(
+                      (show) => getPerformanceId(show) === nextPerformanceId,
+                    );
+                    if (!linkedShow) return;
+                    setTitle(linkedShow.title);
+                    setKind(linkedShow.kind);
+                    setVenue(linkedShow.venue);
+                    setPosterImage(linkedShow.posterImage);
+                  }}
+                  className="min-h-11 rounded-xl border border-input bg-background px-3"
+                >
+                  <option value="new">새 공연으로 등록</option>
+                  {performances.map(([id, performanceTitle]) => (
+                    <option key={id} value={id}>
+                      기존 공연 · {performanceTitle}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs font-normal text-muted-foreground">
+                  같은 공연의 추가 모집이라면 기존 공연을 선택하세요.
+                </span>
+              </label>
               <Field id="show-title" label="공연명" value={title} onChange={setTitle} required />
+              <Field
+                id="posting-title"
+                label="공고명"
+                value={postingTitle}
+                onChange={setPostingTitle}
+                placeholder="예: 2차 앙상블 추가 모집"
+              />
               <Field
                 id="producer-name"
                 label="제작사"
@@ -545,6 +609,14 @@ function CreatePosting() {
                 value={auditionDate}
                 onChange={setAuditionDate}
                 placeholder="2026.08.03 – 2026.08.05"
+              />
+              <Field
+                id="result-announcement-date"
+                label="결과 발표일"
+                value={resultAnnouncementDate}
+                onChange={setResultAnnouncementDate}
+                placeholder="2026.08.10"
+                required
               />
               <Field
                 id="rehearsal-period"

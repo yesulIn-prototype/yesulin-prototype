@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Film, Users, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Film, Megaphone, Users, PlusCircle } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 
 export const Route = createFileRoute("/producer")({
@@ -9,6 +9,7 @@ export const Route = createFileRoute("/producer")({
 const nav = [
   { to: "/producer", label: "대시보드", icon: LayoutDashboard, exact: true },
   { to: "/producer/shows", label: "공연 관리", icon: Film },
+  { to: "/producer/postings", label: "지원 공고 관리", icon: Megaphone },
   { to: "/producer/applicants", label: "지원자 관리", icon: Users },
   { to: "/producer/create", label: "모집 공고 만들기", icon: PlusCircle },
 ];
@@ -53,11 +54,13 @@ function ProducerLayout() {
         </nav>
         <div className="border-t border-border p-4">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold/20 text-xs font-semibold text-gold-foreground ring-1 ring-gold/30">
-              라
-            </div>
+            <img
+              src="/images/company-connect-logo.png"
+              alt=""
+              className="h-10 w-10 rounded-full border border-border bg-white object-contain"
+            />
             <div className="text-xs leading-tight">
-              <div className="font-semibold text-foreground">라이트스테이지</div>
+              <div className="font-semibold text-foreground">컴퍼니연결</div>
               <div className="text-muted-foreground">캐스팅 담당</div>
             </div>
           </div>

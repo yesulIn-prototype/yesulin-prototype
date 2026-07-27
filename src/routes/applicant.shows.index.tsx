@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { useStore, daysUntil } from "@/lib/store";
+import { useStore, daysUntil, getPostingTitle, getShowActivityTimestamp } from "@/lib/store";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
 import { Bookmark, CalendarDays, Clock3, RotateCcw, Search } from "lucide-react";
@@ -24,7 +24,8 @@ function ShowsList() {
 
   const filtered = useMemo(() => {
     let list = shows.filter((s) => {
-      if (q && !s.title.includes(q) && !s.producer.includes(q)) return false;
+      if (q && !s.title.includes(q) && !s.producer.includes(q) && !getPostingTitle(s).includes(q))
+        return false;
       if (kind !== "전체" && s.kind !== kind) return false;
       if (openOnly && s.status !== "모집 중") return false;
       return true;
@@ -32,7 +33,7 @@ function ShowsList() {
     list = list.sort((a, b) =>
       sortBy === "마감 임박"
         ? daysUntil(a.deadline) - daysUntil(b.deadline)
-        : b.deadline.localeCompare(a.deadline),
+        : getShowActivityTimestamp(b) - getShowActivityTimestamp(a),
     );
     return list;
   }, [shows, q, kind, openOnly, sortBy]);
@@ -150,6 +151,9 @@ function ShowsList() {
                   </div>
                   <div className="mt-1 text-lg font-semibold leading-tight text-foreground">
                     {show.title}
+                  </div>
+                  <div className="mt-1 truncate text-xs font-semibold text-primary">
+                    {getPostingTitle(show)}
                   </div>
                   <div className="mt-0.5 text-xs text-muted-foreground">{show.producer}</div>
                   <div className="mt-3 flex flex-wrap gap-1.5">

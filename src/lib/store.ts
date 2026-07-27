@@ -93,7 +93,10 @@ export type AdditionalQuestion = {
 
 export type Show = {
   id: string;
+  performanceId?: string;
   title: string;
+  postingTitle?: string;
+  recruitmentRound?: number;
   producer: string;
   posterColor: string;
   posterImage: string;
@@ -116,6 +119,9 @@ export type Show = {
   status: "모집 중" | "모집 마감" | "모집 예정";
   publicationStatus?: PublicationStatus;
   updatedAt?: string;
+  bumpedAt?: string;
+  resultAnnouncementDate?: string;
+  resultsSentAt?: string;
 };
 
 export type Application = {
@@ -136,6 +142,7 @@ export type Application = {
   motivation: string;
   shortlisted?: boolean;
   rating?: number;
+  resultNotifiedAt?: string;
 };
 
 // -------- mock data --------
@@ -466,7 +473,10 @@ const commonRequired: RequirementItem[] = [
 const shows: Show[] = [
   {
     id: "show-restaurant-christmas",
+    performanceId: "performance-restaurant-christmas",
     title: "연극 식당: 매일이 크리스마스",
+    postingTitle: "1차 주·조연 배우 모집",
+    recruitmentRound: 1,
     producer: "컴퍼니 연결 × 남극장",
     posterColor: "#2c0907",
     posterImage: "/images/editorial/company-connect-restaurant.jpg",
@@ -546,10 +556,14 @@ const shows: Show[] = [
       },
     ],
     status: "모집 중",
+    resultAnnouncementDate: "2026.08.10",
   },
   {
     id: "show-company-connect-ensemble",
+    performanceId: "performance-company-connect-ensemble",
     title: "2026 컴퍼니 연결 배우단원 모집",
+    postingTitle: "2026 배우단원 정기 모집",
+    recruitmentRound: 1,
     producer: "컴퍼니 연결 × 남극장",
     posterColor: "#173a69",
     posterImage: "/images/editorial/company-connect-ensemble.jpg",
@@ -601,11 +615,15 @@ const shows: Show[] = [
       },
     ],
     status: "모집 마감",
+    resultAnnouncementDate: "2026.07.10",
   },
   {
     id: "show-moonlight",
+    performanceId: "performance-moonlight",
     title: "뮤지컬 달빛",
-    producer: "라이트스테이지",
+    postingTitle: "1차 주·조연 배우 모집",
+    recruitmentRound: 1,
+    producer: "컴퍼니연결",
     posterColor: "#344054",
     posterImage: "/images/editorial/poster-moonlight.jpg",
     kind: "뮤지컬",
@@ -665,10 +683,61 @@ const shows: Show[] = [
       { id: "q4", question: "현재 참여 중이거나 예정된 다른 작품이 있나요?", type: "짧은 답변" },
     ],
     status: "모집 마감",
+    resultAnnouncementDate: "2026.07.27",
+  },
+  {
+    id: "show-moonlight-ensemble",
+    performanceId: "performance-moonlight",
+    title: "뮤지컬 달빛",
+    postingTitle: "2차 앙상블 추가 모집",
+    recruitmentRound: 2,
+    producer: "컴퍼니연결",
+    posterColor: "#344054",
+    posterImage: "/images/editorial/poster-moonlight.jpg",
+    kind: "뮤지컬",
+    description: "뮤지컬 달빛의 군무와 코러스를 함께 완성할 남녀 앙상블 배우를 추가 모집합니다.",
+    roles: [
+      {
+        id: "r3",
+        name: "남성 앙상블",
+        description: "군무와 코러스 중심",
+        requirements: "안무 소화 필수",
+        allowMultiple: true,
+      },
+      {
+        id: "r4",
+        name: "여성 앙상블",
+        description: "군무와 코러스 중심",
+        requirements: "안무 소화 필수",
+        allowMultiple: true,
+      },
+    ],
+    deadline: "2026.07.30",
+    auditionDate: "2026.08.01",
+    rehearsalPeriod: "2026.08.03 – 2026.09.10",
+    showPeriod: "2026.09.12 – 2026.10.04",
+    venue: "라이트홀 대극장",
+    compensation: "회당 출연료 지급 (별도 협의)",
+    requiredItems: commonRequired,
+    optionalItems: [{ key: "video-dance", label: "안무 영상", required: false }],
+    additionalQuestions: [
+      {
+        id: "q1",
+        question: "앙상블 또는 댄스 캡틴 경험을 작성해주세요.",
+        type: "긴 답변",
+      },
+    ],
+    status: "모집 중",
+    publicationStatus: "게시됨",
+    updatedAt: "2026-07-26T09:00:00.000Z",
+    resultAnnouncementDate: "2026.08.05",
   },
   {
     id: "show-cityrain",
+    performanceId: "performance-cityrain",
     title: "뮤지컬 시티레인",
+    postingTitle: "1차 배우 모집",
+    recruitmentRound: 1,
     producer: "스타라이트컴퍼니",
     posterColor: "#242424",
     posterImage: "/images/editorial/poster-cityrain.jpg",
@@ -716,10 +785,14 @@ const shows: Show[] = [
       },
     ],
     status: "모집 중",
+    resultAnnouncementDate: "2026.08.15",
   },
   {
     id: "show-summerplay",
+    performanceId: "performance-summerplay",
     title: "연극 여름의 끝",
+    postingTitle: "1차 배우 모집",
+    recruitmentRound: 1,
     producer: "시선극단",
     posterColor: "#171717",
     posterImage: "/images/editorial/poster-summerplay.jpg",
@@ -755,10 +828,14 @@ const shows: Show[] = [
       { id: "q1", question: "이 작품에 지원한 이유는 무엇인가요?", type: "긴 답변" },
     ],
     status: "모집 중",
+    resultAnnouncementDate: "2026.08.08",
   },
   {
     id: "show-nightfall",
+    performanceId: "performance-nightfall",
     title: "뮤지컬 나이트폴",
+    postingTitle: "1차 배우 모집",
+    recruitmentRound: 1,
     producer: "블루스테이지",
     posterColor: "#2a4759",
     posterImage: "/images/editorial/poster-nightfall.jpg",
@@ -791,6 +868,7 @@ const shows: Show[] = [
     optionalItems: [],
     additionalQuestions: [],
     status: "모집 마감",
+    resultAnnouncementDate: "2026.07.10",
   },
 ];
 
@@ -820,7 +898,7 @@ const initialApplications: Application[] = [
     applicantId: "me",
     applicantName: "김하늘",
     submittedAt: "2026.06.18 09:12",
-    applyStatus: "합격",
+    applyStatus: "오디션 예정",
     reviewStatus: "합격",
     selectedCareerIds: ["c1"],
     selectedPhotoIds: ["p1", "p2"],
@@ -917,6 +995,8 @@ type Store = {
   updateApplicant: (patch: Partial<Applicant>) => void;
   saveShow: (show: Omit<Show, "id" | "updatedAt"> & { id?: string }) => string;
   removeShow: (id: string) => void;
+  bumpShow: (id: string) => void;
+  sendShowResults: (showId: string) => void;
 
   submitApplication: (
     app: Omit<
@@ -1121,6 +1201,36 @@ export const useStore = create<Store>()(
           favoriteShowIds: state.favoriteShowIds.filter((showId) => showId !== id),
         })),
 
+      bumpShow: (id) =>
+        set((state) => {
+          const bumpedAt = new Date().toISOString();
+          return {
+            shows: state.shows.map((show) =>
+              show.id === id ? { ...show, bumpedAt, updatedAt: bumpedAt } : show,
+            ),
+          };
+        }),
+
+      sendShowResults: (showId) =>
+        set((state) => {
+          const sentAt = new Date().toISOString();
+          return {
+            shows: state.shows.map((show) =>
+              show.id === showId ? { ...show, resultsSentAt: sentAt } : show,
+            ),
+            applications: state.applications.map((application) =>
+              application.showId === showId &&
+              (application.reviewStatus === "합격" || application.reviewStatus === "불합격")
+                ? {
+                    ...application,
+                    applyStatus: application.reviewStatus,
+                    resultNotifiedAt: sentAt,
+                  }
+                : application,
+            ),
+          };
+        }),
+
       submitApplication: (application) => {
         const id = newId("application");
         const submittedAt = new Intl.DateTimeFormat("ko-KR", {
@@ -1155,9 +1265,12 @@ export const useStore = create<Store>()(
               ? {
                   ...application,
                   ...patch,
-                  applyStatus: patch.reviewStatus
-                    ? applyStatusForReview(patch.reviewStatus)
-                    : application.applyStatus,
+                  applyStatus:
+                    patch.reviewStatus &&
+                    (!(patch.reviewStatus === "합격" || patch.reviewStatus === "불합격") ||
+                      application.resultNotifiedAt)
+                      ? applyStatusForReview(patch.reviewStatus)
+                      : application.applyStatus,
                 }
               : application,
           ),
@@ -1170,9 +1283,12 @@ export const useStore = create<Store>()(
               ? {
                   ...application,
                   ...patch,
-                  applyStatus: patch.reviewStatus
-                    ? applyStatusForReview(patch.reviewStatus)
-                    : application.applyStatus,
+                  applyStatus:
+                    patch.reviewStatus &&
+                    (!(patch.reviewStatus === "합격" || patch.reviewStatus === "불합격") ||
+                      application.resultNotifiedAt)
+                      ? applyStatusForReview(patch.reviewStatus)
+                      : application.applyStatus,
                 }
               : application,
           ),
@@ -1237,6 +1353,30 @@ export const useStore = create<Store>()(
       merge: (persistedState, currentState) => {
         const saved = persistedState as Partial<Store>;
         const savedApplicant = saved.applicant;
+        const mergedShows = (saved.shows ?? currentState.shows).map((show) => {
+          const bundledShow = currentState.shows.find((item) => item.id === show.id);
+          return {
+            ...bundledShow,
+            ...show,
+            producer: show.producer === "라이트스테이지" ? "컴퍼니연결" : show.producer,
+            performanceId:
+              show.performanceId ?? bundledShow?.performanceId ?? `performance:${show.title}`,
+            postingTitle: show.postingTitle ?? bundledShow?.postingTitle ?? "배우 모집 공고",
+            recruitmentRound: show.recruitmentRound ?? bundledShow?.recruitmentRound ?? 1,
+            resultAnnouncementDate:
+              show.resultAnnouncementDate ?? bundledShow?.resultAnnouncementDate,
+          };
+        });
+        const mergedApplications = (saved.applications ?? currentState.applications).map(
+          (application) => ({
+            ...application,
+            applyStatus:
+              (application.reviewStatus === "합격" || application.reviewStatus === "불합격") &&
+              !application.resultNotifiedAt
+                ? "오디션 예정"
+                : application.applyStatus,
+          }),
+        );
         const photos = (savedApplicant?.photos ?? currentState.applicant.photos).map((photo) => {
           const bundledPhoto = currentState.applicant.photos.find((item) => item.id === photo.id);
           return {
@@ -1248,6 +1388,8 @@ export const useStore = create<Store>()(
         return {
           ...currentState,
           ...saved,
+          shows: mergedShows,
+          applications: mergedApplications,
           favoriteShowIds: saved.favoriteShowIds ?? [],
           manualSchedules: saved.manualSchedules ?? [],
           applicant: {
@@ -1265,6 +1407,22 @@ export const useStore = create<Store>()(
 export const findShow = (id: string) => useStore.getState().shows.find((s) => s.id === id);
 export const findRole = (show: Show | undefined, id: string) =>
   show?.roles.find((r) => r.id === id);
+export const getPerformanceId = (show: Show) => show.performanceId ?? `performance:${show.title}`;
+export const getPostingTitle = (show: Show) =>
+  show.postingTitle ?? `${show.recruitmentRound ?? 1}차 배우 모집`;
+export const isFinalReviewStatus = (status: ReviewStatus) =>
+  status === "합격" || status === "불합격";
+export function getShowActivityTimestamp(show: Show) {
+  const activityDate = show.bumpedAt ?? show.updatedAt;
+  if (activityDate) {
+    const timestamp = Date.parse(activityDate);
+    if (Number.isFinite(timestamp)) return timestamp;
+  }
+
+  const match = show.deadline.match(/(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
+  if (!match) return 0;
+  return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])).getTime();
+}
 
 export function daysUntil(dateStr: string): number {
   const match = dateStr.match(/(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
