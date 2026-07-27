@@ -1,5 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, CalendarDays, FileText, Image, Video } from "lucide-react";
+import { ArrowLeft, BellRing, CalendarDays, FileText, Image, Video } from "lucide-react";
 import { ApplyBadge } from "@/components/status-badge";
 import { PhotoTile } from "@/components/poster";
 import { useStore } from "@/lib/store";
@@ -39,6 +39,13 @@ function ApplicationDetail() {
       </Link>
 
       <header className="rounded-2xl bg-primary p-6 text-primary-foreground md:p-8">
+        {application.resultNotifiedAt && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-3 text-sm font-semibold">
+            <BellRing className="h-4 w-4" />
+            {new Date(application.resultNotifiedAt).toLocaleString("ko-KR")}에 최종 결과가
+            도착했습니다.
+          </div>
+        )}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="text-sm opacity-70">{show.producer}</div>

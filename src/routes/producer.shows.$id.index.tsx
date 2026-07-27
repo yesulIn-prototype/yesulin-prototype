@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import {
   useStore,
   daysUntil,
+  getPostingTitle,
+  isFinalReviewStatus,
   type Applicant,
   type Application,
   type ReviewStatus,
@@ -10,6 +12,8 @@ import {
 import { ReviewBadge } from "@/components/status-badge";
 import {
   AlertCircle,
+  BellRing,
+  CalendarCheck2,
   CheckCircle2,
   ChevronLeft,
   Eye,
@@ -18,6 +22,7 @@ import {
   RotateCcw,
   Save,
   Search,
+  Send,
   Star,
   StickyNote,
   Trash2,
@@ -65,6 +70,7 @@ function ShowApplicants() {
   const show = useStore((s) => s.shows.find((item) => item.id === id));
   const allApplications = useStore((s) => s.applications);
   const removeShow = useStore((s) => s.removeShow);
+  const sendShowResults = useStore((s) => s.sendShowResults);
   const updateReview = useStore((s) => s.updateReview);
   const updateReviews = useStore((s) => s.updateReviews);
   const toggleShortlist = useStore((s) => s.toggleShortlist);
@@ -90,6 +96,23 @@ function ShowApplicants() {
   const applications = allApplications.filter((application) => application.showId === id);
   const deadlineDays = daysUntil(show.deadline);
   const deadlineLabel = deadlineDays >= 0 ? `D-${deadlineDays}` : "마감";
+  const announcementDays = show.resultAnnouncementDate
+    ? daysUntil(show.resultAnnouncementDate)
+    : null;
+  const savedFinalResults = applications.filter((application) =>
+    isFinalReviewStatus(application.reviewStatus),
+  );
+  const unsavedResultCount = Object.entries(pending).filter(([appId, nextStatus]) => {
+    const application = applications.find((item) => item.id === appId);
+    return application && application.reviewStatus !== nextStatus;
+  }).length;
+  const hasApplications = applications.length > 0;
+  const deadlinePassed = deadlineDays < 0;
+  const announcementReady = announcementDays !== null && announcementDays <= 0;
+  const allResultsSaved =
+    hasApplications && savedFinalResults.length === applications.length && unsavedResultCount === 0;
+  const canSendResults =
+    !show.resultsSentAt && deadlinePassed && announcementReady && allResultsSaved;
   const rows = useMemo<RowModel[]>(() => {
     const list = applications
       .map((app) => {
@@ -187,25 +210,33 @@ function ShowApplicants() {
   }
 
   async function deleteShow() {
-    await navigate({ to: "/producer/shows" });
+    await navigate({ to: "/producer/postings" });
     removeShow(id);
+  }
+
+  function notifyResults() {
+    if (!canSendResults) return;
+    sendShowResults(show.id);
+    setStatusNotice(`${applications.length}명에게 최종 결과 알림을 보냈습니다.`);
   }
 
   return (
     <div className="space-y-6">
       <Link
-        to="/producer"
+        to="/producer/postings"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ChevronLeft className="h-4 w-4" /> 대시보드로
+        <ChevronLeft className="h-4 w-4" /> 지원 공고 관리로
       </Link>
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="text-xs text-muted-foreground">{show.producer}</div>
           <h1 className="truncate text-2xl font-semibold tracking-tight">{show.title}</h1>
+          <div className="mt-1 text-sm font-semibold text-primary">{getPostingTitle(show)}</div>
           <div className="mt-1 text-sm text-muted-foreground">
-            지원 마감 {show.deadline} · {deadlineLabel} · 오디션 {show.auditionDate}
+            지원 마감 {show.deadline} · {deadlineLabel} · 오디션 {show.auditionDate} · 결과 발표{" "}
+            {show.resultAnnouncementDate || "미정"}
           </div>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
@@ -222,6 +253,115 @@ function ShowApplicants() {
               accent="success"
             />
           </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                size="sm"
+                variant={show.resultsSentAt ? "secondary" : "default"}
+              >
+                {show.resultsSentAt ? <CheckCircle2 /> : <BellRing />}
+                {show.resultsSentAt ? "결과 발송 완료" : "결과 알림 보내기"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="max-w-2xl">
+              <AlertDialogHeader>
+                <AlertDialogTitle>전체 지원자 결과를 최종 확인하세요</AlertDialogTitle>
+                <AlertDialogDescription>
+                  저장된 합격·불합격 결과와 마감 및 발표 일정을 모두 충족해야 알림을 보낼 수
+                  있습니다.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+
+              <div className="grid gap-2">
+                <ResultCheck
+                  passed={hasApplications}
+                  label="알림 대상 지원자"
+                  detail={
+                    hasApplications
+                      ? `전체 ${applications.length}명`
+                      : "알림을 보낼 지원자가 없습니다."
+                  }
+                />
+                <ResultCheck
+                  passed={allResultsSaved}
+                  label="전체 합·불 결과 저장"
+                  detail={`저장 완료 ${savedFinalResults.length}/${applications.length}명${
+                    unsavedResultCount > 0 ? ` · 미저장 변경 ${unsavedResultCount}건` : ""
+                  }`}
+                />
+                <ResultCheck
+                  passed={deadlinePassed}
+                  label="지원 공고 마감"
+                  detail={
+                    deadlinePassed
+                      ? `${show.deadline} 마감 확인`
+                      : `${show.deadline}까지 지원 접수 중`
+                  }
+                />
+                <ResultCheck
+                  passed={announcementReady}
+                  label="결과 발표일"
+                  detail={
+                    show.resultAnnouncementDate
+                      ? announcementReady
+                        ? `${show.resultAnnouncementDate} 발표 가능`
+                        : `${show.resultAnnouncementDate} 발표 예정`
+                      : "결과 발표일이 입력되지 않았습니다."
+                  }
+                />
+              </div>
+
+              <div className="max-h-60 overflow-y-auto rounded-xl border border-border">
+                {applications.length === 0 ? (
+                  <div className="p-4 text-sm text-muted-foreground">지원자가 없습니다.</div>
+                ) : (
+                  applications.map((application) => {
+                    const pendingStatus = pending[application.id];
+                    const isUnsaved =
+                      pendingStatus !== undefined && pendingStatus !== application.reviewStatus;
+                    return (
+                      <div
+                        key={application.id}
+                        className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 last:border-b-0"
+                      >
+                        <div>
+                          <div className="text-sm font-semibold">{application.applicantName}</div>
+                          {isUnsaved && (
+                            <div className="mt-0.5 text-xs text-warning-foreground">
+                              변경한 결과를 먼저 저장하세요.
+                            </div>
+                          )}
+                        </div>
+                        <ReviewBadge
+                          status={isUnsaved ? pendingStatus : application.reviewStatus}
+                          className="px-3 py-1.5 text-xs"
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {show.resultsSentAt && (
+                <div className="rounded-xl border border-success/30 bg-success/10 px-4 py-3 text-sm text-success">
+                  {new Date(show.resultsSentAt).toLocaleString("ko-KR")}에 결과 알림을 발송했습니다.
+                </div>
+              )}
+
+              <AlertDialogFooter>
+                <AlertDialogCancel>{show.resultsSentAt ? "닫기" : "취소"}</AlertDialogCancel>
+                <AlertDialogAction
+                  disabled={!canSendResults}
+                  onClick={notifyResults}
+                  className="gap-2"
+                >
+                  <Send />
+                  {show.resultsSentAt ? "발송 완료" : `전체 ${applications.length}명에게 보내기`}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -739,6 +879,34 @@ function MaterialSummary({ app }: { app: Application }) {
   );
 }
 
+function ResultCheck({
+  passed,
+  label,
+  detail,
+}: {
+  passed: boolean;
+  label: string;
+  detail: string;
+}) {
+  return (
+    <div
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${
+        passed ? "border-success/30 bg-success/10" : "border-warning/35 bg-warning/10"
+      }`}
+    >
+      {passed ? (
+        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+      ) : (
+        <CalendarCheck2 className="mt-0.5 h-4 w-4 shrink-0 text-warning-foreground" />
+      )}
+      <div>
+        <div className="text-sm font-semibold">{label}</div>
+        <div className="mt-0.5 text-xs text-muted-foreground">{detail}</div>
+      </div>
+    </div>
+  );
+}
+
 function FilterSelect({
   label,
   value,
@@ -754,6 +922,7 @@ function FilterSelect({
     <label>
       <span className="sr-only">{label}</span>
       <select
+        aria-label={label}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

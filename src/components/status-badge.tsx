@@ -22,7 +22,10 @@ const applyMap: Record<ApplyStatus, BadgeStyle> = {
 };
 
 const reviewMap: Record<ReviewStatus, BadgeStyle> = {
-  미확인: { chip: "bg-warning/12 text-warning-foreground border-warning/35", dot: "bg-warning" },
+  미확인: {
+    chip: "bg-warning text-warning-foreground border-warning",
+    dot: "bg-warning-foreground",
+  },
   "검토 중": { chip: "bg-secondary text-secondary-foreground border-border", dot: "bg-primary/60" },
   "오디션 대상": { chip: "bg-success/12 text-success border-success/30", dot: "bg-success" },
   보류: { chip: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/60" },

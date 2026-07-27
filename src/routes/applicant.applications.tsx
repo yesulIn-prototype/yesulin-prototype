@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useStore, daysUntil, findShow, findRole, type ApplyStatus } from "@/lib/store";
 import { ApplyBadge } from "@/components/status-badge";
-import { Files, Search } from "lucide-react";
+import { BellRing, Files, Search } from "lucide-react";
 
 export const Route = createFileRoute("/applicant/applications")({
   component: MyApplications,
@@ -89,6 +89,12 @@ function MyApplications() {
                   </div>
                   <div className="mt-2 text-lg font-semibold">{show.title}</div>
                   <div className="mt-0.5 text-xs text-muted-foreground">지원 배역: {roleName}</div>
+                  {app.resultNotifiedAt && (
+                    <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-gold/35 bg-gold/15 px-3 py-2 text-xs font-semibold text-gold-foreground">
+                      <BellRing className="h-3.5 w-3.5" />
+                      최종 결과 알림이 도착했습니다.
+                    </div>
+                  )}
                   <div className="mt-3 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 md:grid-cols-4">
                     <MiniStat label="지원일" value={app.submittedAt.split(" ")[0]} />
                     <MiniStat

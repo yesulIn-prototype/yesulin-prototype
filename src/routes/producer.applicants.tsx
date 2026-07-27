@@ -120,7 +120,10 @@ function AllApplicants() {
                     </div>
                   )}
                   <div className="absolute right-3 top-3">
-                    <ReviewBadge status={application.reviewStatus} />
+                    <ReviewBadge
+                      status={application.reviewStatus}
+                      className="min-h-9 px-4 py-2 text-sm font-bold shadow-md backdrop-blur"
+                    />
                   </div>
                 </div>
                 <div className="p-4">

@@ -19,6 +19,7 @@ import { Route as ApplicantProfileRouteImport } from './routes/applicant.profile
 import { Route as ProducerIndexRouteImport } from './routes/producer.index'
 import { Route as ProducerApplicantsRouteImport } from './routes/producer.applicants'
 import { Route as ProducerCreateRouteImport } from './routes/producer.create'
+import { Route as ProducerPostingsRouteImport } from './routes/producer.postings'
 import { Route as ApplicantApplicationsAppIdRouteImport } from './routes/applicant.applications_.$appId'
 import { Route as ApplicantShowsIndexRouteImport } from './routes/applicant.shows.index'
 import { Route as ProducerShowsIndexRouteImport } from './routes/producer.shows.index'
@@ -78,6 +79,11 @@ const ProducerCreateRoute = ProducerCreateRouteImport.update({
   path: '/create',
   getParentRoute: () => ProducerRoute,
 } as any)
+const ProducerPostingsRoute = ProducerPostingsRouteImport.update({
+  id: '/postings',
+  path: '/postings',
+  getParentRoute: () => ProducerRoute,
+} as any)
 const ApplicantApplicationsAppIdRoute =
   ApplicantApplicationsAppIdRouteImport.update({
     id: '/applications_/$appId',
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/applicant/profile': typeof ApplicantProfileRoute
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
+  '/producer/postings': typeof ProducerPostingsRoute
   '/applicant/': typeof ApplicantIndexRoute
   '/producer/': typeof ProducerIndexRoute
   '/applicant/applications/$appId': typeof ApplicantApplicationsAppIdRoute
@@ -149,6 +156,7 @@ export interface FileRoutesByTo {
   '/applicant/profile': typeof ApplicantProfileRoute
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
+  '/producer/postings': typeof ProducerPostingsRoute
   '/applicant': typeof ApplicantIndexRoute
   '/producer': typeof ProducerIndexRoute
   '/applicant/applications/$appId': typeof ApplicantApplicationsAppIdRoute
@@ -170,6 +178,7 @@ export interface FileRoutesById {
   '/applicant/profile': typeof ApplicantProfileRoute
   '/producer/applicants': typeof ProducerApplicantsRoute
   '/producer/create': typeof ProducerCreateRoute
+  '/producer/postings': typeof ProducerPostingsRoute
   '/applicant/': typeof ApplicantIndexRoute
   '/producer/': typeof ProducerIndexRoute
   '/applicant/applications_/$appId': typeof ApplicantApplicationsAppIdRoute
@@ -192,6 +201,7 @@ export interface FileRouteTypes {
     | '/applicant/profile'
     | '/producer/applicants'
     | '/producer/create'
+    | '/producer/postings'
     | '/applicant/'
     | '/producer/'
     | '/applicant/applications/$appId'
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/applicant/profile'
     | '/producer/applicants'
     | '/producer/create'
+    | '/producer/postings'
     | '/applicant'
     | '/producer'
     | '/applicant/applications/$appId'
@@ -230,6 +241,7 @@ export interface FileRouteTypes {
     | '/applicant/profile'
     | '/producer/applicants'
     | '/producer/create'
+    | '/producer/postings'
     | '/applicant/'
     | '/producer/'
     | '/applicant/applications_/$appId'
@@ -318,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/create'
       fullPath: '/producer/create'
       preLoaderRoute: typeof ProducerCreateRouteImport
+      parentRoute: typeof ProducerRoute
+    }
+    '/producer/postings': {
+      id: '/producer/postings'
+      path: '/postings'
+      fullPath: '/producer/postings'
+      preLoaderRoute: typeof ProducerPostingsRouteImport
       parentRoute: typeof ProducerRoute
     }
     '/applicant/applications_/$appId': {
@@ -410,6 +429,7 @@ const ApplicantRouteWithChildren = ApplicantRoute._addFileChildren(
 interface ProducerRouteChildren {
   ProducerApplicantsRoute: typeof ProducerApplicantsRoute
   ProducerCreateRoute: typeof ProducerCreateRoute
+  ProducerPostingsRoute: typeof ProducerPostingsRoute
   ProducerIndexRoute: typeof ProducerIndexRoute
   ProducerShowsIndexRoute: typeof ProducerShowsIndexRoute
   ProducerShowsIdIndexRoute: typeof ProducerShowsIdIndexRoute
@@ -419,6 +439,7 @@ interface ProducerRouteChildren {
 const ProducerRouteChildren: ProducerRouteChildren = {
   ProducerApplicantsRoute: ProducerApplicantsRoute,
   ProducerCreateRoute: ProducerCreateRoute,
+  ProducerPostingsRoute: ProducerPostingsRoute,
   ProducerIndexRoute: ProducerIndexRoute,
   ProducerShowsIndexRoute: ProducerShowsIndexRoute,
   ProducerShowsIdIndexRoute: ProducerShowsIdIndexRoute,

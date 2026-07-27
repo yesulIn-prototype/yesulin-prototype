@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
-import { useStore, daysUntil } from "@/lib/store";
+import { useStore, daysUntil, getPostingTitle } from "@/lib/store";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
@@ -75,6 +75,7 @@ function ShowDetail() {
             )}
           </div>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight">{show.title}</h1>
+          <div className="mt-1 text-base font-semibold text-primary">{getPostingTitle(show)}</div>
           <div className="mt-1 text-sm text-muted-foreground">{show.producer}</div>
           <p className="mt-4 text-sm leading-relaxed text-foreground/80">{show.description}</p>
           {(show.sourceUrl || show.producerUrl) && (
