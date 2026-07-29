@@ -15,7 +15,13 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { getPerformanceId, useStore, type AdditionalQuestion, type ShowRole } from "@/lib/store";
+import {
+  getPerformanceId,
+  useStore,
+  type AdditionalQuestion,
+  type AuditionStage,
+  type ShowRole,
+} from "@/lib/store";
 
 import { trackAnalyticsEvent } from "@/lib/analytics";
 
@@ -54,6 +60,13 @@ const emptyRole = (): ShowRole => ({
   allowMultiple: false,
 });
 
+const defaultAuditionStages = (): AuditionStage[] => [
+  { id: "document", name: "서류 심사", order: 1, type: "서류" },
+  { id: "audition-1", name: "1차 오디션", order: 2, type: "오디션" },
+  { id: "audition-2", name: "2차 오디션", order: 3, type: "오디션" },
+  { id: "final", name: "최종 결과", order: 4, type: "최종" },
+];
+
 function CreatePosting() {
   const navigate = useNavigate();
   const saveShow = useStore((state) => state.saveShow);
@@ -76,6 +89,7 @@ function CreatePosting() {
   const [resultAnnouncementDate, setResultAnnouncementDate] = useState("");
   const [rehearsalPeriod, setRehearsalPeriod] = useState("");
   const [showPeriod, setShowPeriod] = useState("");
+  const [auditionStages, setAuditionStages] = useState<AuditionStage[]>(defaultAuditionStages);
   const [roles, setRoles] = useState<ShowRole[]>([emptyRole()]);
   const [posterImage, setPosterImage] = useState("");
   const [posterFileName, setPosterFileName] = useState("");
@@ -257,6 +271,20 @@ function CreatePosting() {
       deadline: deadline.replaceAll("-", "."),
       auditionDate: auditionDate.replaceAll("-", "."),
       resultAnnouncementDate: resultAnnouncementDate.replaceAll("-", "."),
+      auditionStages: auditionStages.map((stage, index) => ({
+        ...stage,
+        order: index + 1,
+        date:
+          stage.type === "오디션" &&
+          index === auditionStages.findIndex((item) => item.type === "오디션")
+            ? auditionDate.replaceAll("-", ".")
+            : stage.date,
+        venue: stage.type === "오디션" ? venue : undefined,
+        resultAnnouncementDate:
+          stage.type === "최종"
+            ? resultAnnouncementDate.replaceAll("-", ".")
+            : stage.resultAnnouncementDate,
+      })),
       rehearsalPeriod,
       showPeriod,
       roles: validRoles.length > 0 ? validRoles : roles,
@@ -618,6 +646,73 @@ function CreatePosting() {
                 placeholder="2026.08.10"
                 required
               />
+              <fieldset className="rounded-xl border border-border bg-surface p-4 md:col-span-2">
+                <legend className="px-1 text-sm font-semibold">전형 단계 설정</legend>
+                <p className="mb-3 text-xs text-muted-foreground">
+                  공연에 맞게 1차·2차 오디션 단계를 추가하거나 이름을 변경할 수 있습니다.
+                </p>
+                <div className="space-y-2">
+                  {auditionStages.map((stage, index) => (
+                    <div
+                      key={stage.id}
+                      className="grid grid-cols-[48px_minmax(0,1fr)_auto] items-center gap-2"
+                    >
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        {index + 1}단계
+                      </span>
+                      <input
+                        value={stage.name}
+                        onChange={(event) =>
+                          setAuditionStages((current) =>
+                            current.map((item) =>
+                              item.id === stage.id ? { ...item, name: event.target.value } : item,
+                            ),
+                          )
+                        }
+                        aria-label={`${index + 1}단계 이름`}
+                        className="min-h-10 rounded-lg border border-input bg-background px-3 text-sm"
+                      />
+                      <button
+                        type="button"
+                        disabled={stage.type !== "오디션"}
+                        onClick={() =>
+                          setAuditionStages((current) =>
+                            current.filter((item) => item.id !== stage.id),
+                          )
+                        }
+                        aria-label={`${stage.name} 단계 삭제`}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10 disabled:invisible"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAuditionStages((current) => {
+                      const finalStage = current.find((stage) => stage.type === "최종");
+                      const beforeFinal = current.filter((stage) => stage.type !== "최종");
+                      const auditionCount = current.filter(
+                        (stage) => stage.type === "오디션",
+                      ).length;
+                      const nextStage: AuditionStage = {
+                        id: `audition-${crypto.randomUUID()}`,
+                        name: `${auditionCount + 1}차 오디션`,
+                        order: beforeFinal.length + 1,
+                        type: "오디션",
+                      };
+                      return finalStage
+                        ? [...beforeFinal, nextStage, finalStage]
+                        : [...current, nextStage];
+                    })
+                  }
+                  className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-semibold"
+                >
+                  <Plus className="h-4 w-4" /> 오디션 단계 추가
+                </button>
+              </fieldset>
               <Field
                 id="rehearsal-period"
                 label="연습 기간"

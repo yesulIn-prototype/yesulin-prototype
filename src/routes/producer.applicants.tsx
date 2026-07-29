@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
-import { ReviewBadge } from "@/components/status-badge";
-import { useStore } from "@/lib/store";
+import { StageResultBadge } from "@/components/status-badge";
+import {
+  getApplicationStageProgress,
+  getAuditionStages,
+  useStore,
+  type StageResult,
+} from "@/lib/store";
 import { ArrowRight, Search, Users } from "lucide-react";
 
 export const Route = createFileRoute("/producer/applicants")({
@@ -14,17 +19,27 @@ function AllApplicants() {
   const getApplicantById = useStore((s) => s.getApplicantById);
   const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState("전체");
-  const [statusFilter, setStatusFilter] = useState("전체");
+  const [stageFilter, setStageFilter] = useState("전체");
+  const [stageResultFilter, setStageResultFilter] = useState("전체");
+  const stageOptions = Array.from(
+    new Map(
+      shows.flatMap((show) => getAuditionStages(show)).map((stage) => [stage.id, stage] as const),
+    ).values(),
+  );
 
   const list = useMemo(
     () =>
       applications.filter((application) => {
+        const show = shows.find((item) => item.id === application.showId);
+        if (!show) return false;
+        const progress = getApplicationStageProgress(application, show);
         if (query && !application.applicantName.includes(query.trim())) return false;
         if (showFilter !== "전체" && application.showId !== showFilter) return false;
-        if (statusFilter !== "전체" && application.reviewStatus !== statusFilter) return false;
+        if (stageFilter !== "전체" && progress.stage.id !== stageFilter) return false;
+        if (stageResultFilter !== "전체" && progress.result !== stageResultFilter) return false;
         return true;
       }),
-    [applications, query, showFilter, statusFilter],
+    [applications, query, showFilter, shows, stageFilter, stageResultFilter],
   );
 
   return (
@@ -36,7 +51,7 @@ function AllApplicants() {
         </p>
       </div>
 
-      <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-[1fr_auto_auto]">
+      <div className="grid gap-3 rounded-2xl border border-border bg-card p-4 md:grid-cols-[1fr_repeat(4,auto)]">
         <label className="relative">
           <span className="sr-only">지원자 이름 검색</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -63,19 +78,36 @@ function AllApplicants() {
           </select>
         </label>
         <label>
-          <span className="sr-only">검토 상태 필터</span>
+          <span className="sr-only">전형 단계 필터</span>
           <select
-            value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            value={stageFilter}
+            onChange={(event) => setStageFilter(event.target.value)}
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
           >
-            <option value="전체">검토 상태 전체</option>
-            {["미확인", "검토 중", "오디션 대상", "보류", "합격", "불합격"].map((status) => (
-              <option key={status}>{status}</option>
+            <option value="전체">전형 단계 전체</option>
+            {stageOptions.map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
             ))}
           </select>
         </label>
-        <div className="text-xs text-muted-foreground md:col-span-3">
+        <label>
+          <span className="sr-only">단계 결과 필터</span>
+          <select
+            value={stageResultFilter}
+            onChange={(event) => setStageResultFilter(event.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+          >
+            <option value="전체">단계 결과 전체</option>
+            {(["검토 대기", "진행 중", "합격", "불합격", "보류", "불참"] as StageResult[]).map(
+              (result) => (
+                <option key={result}>{result}</option>
+              ),
+            )}
+          </select>
+        </label>
+        <div className="text-xs text-muted-foreground md:col-span-5">
           검색 결과 <strong className="text-foreground">{list.length}명</strong>
         </div>
       </div>
@@ -99,6 +131,7 @@ function AllApplicants() {
               .join(", ");
 
             if (!show) return null;
+            const progress = getApplicationStageProgress(application, show);
             return (
               <Link
                 key={application.id}
@@ -120,10 +153,15 @@ function AllApplicants() {
                     </div>
                   )}
                   <div className="absolute right-3 top-3">
-                    <ReviewBadge
-                      status={application.reviewStatus}
-                      className="min-h-9 px-4 py-2 text-sm font-bold shadow-md backdrop-blur"
-                    />
+                    <div className="flex flex-col items-end gap-1.5">
+                      <span className="rounded-full border border-white/30 bg-black/65 px-3 py-1 text-xs font-bold text-white shadow-md backdrop-blur">
+                        {progress.stage.name}
+                      </span>
+                      <StageResultBadge
+                        status={progress.result}
+                        className="min-h-8 px-3 py-2 text-xs font-bold shadow-md backdrop-blur"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="p-4">
