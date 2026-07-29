@@ -165,7 +165,7 @@ function ShowDetail() {
             </p>
           )}
           {(show.detailImages?.length ?? 0) > 0 && (
-            <div className="mt-5 space-y-4">
+            <div className="mx-auto mt-5 max-w-2xl space-y-4">
               {show.detailImages?.map((detailImage) => (
                 <figure
                   key={detailImage.id}
@@ -176,9 +176,6 @@ function ShowDetail() {
                     alt={detailImage.name}
                     className="block h-auto w-full"
                   />
-                  <figcaption className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
-                    {detailImage.name}
-                  </figcaption>
                 </figure>
               ))}
             </div>

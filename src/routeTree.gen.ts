@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicantRouteImport } from './routes/applicant'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProducerRouteImport } from './routes/producer'
 import { Route as ApplicantIndexRouteImport } from './routes/applicant.index'
 import { Route as ApplicantApplicationsRouteImport } from './routes/applicant.applications'
@@ -37,6 +38,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApplicantRoute = ApplicantRouteImport.update({
   id: '/applicant',
   path: '/applicant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProducerRoute = ProducerRouteImport.update({
@@ -131,6 +137,7 @@ const ProducerShowsIdApplicantsAppIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
+  '/login': typeof LoginRoute
   '/producer': typeof ProducerRouteWithChildren
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
   '/applicant/profile': typeof ApplicantProfileRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/applicant': typeof ApplicantRouteWithChildren
+  '/login': typeof LoginRoute
   '/producer': typeof ProducerRouteWithChildren
   '/applicant/applications': typeof ApplicantApplicationsRoute
   '/applicant/files': typeof ApplicantFilesRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/applicant'
+    | '/login'
     | '/producer'
     | '/applicant/applications'
     | '/applicant/files'
@@ -215,6 +225,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/applicant/applications'
     | '/applicant/files'
     | '/applicant/profile'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/applicant'
+    | '/login'
     | '/producer'
     | '/applicant/applications'
     | '/applicant/files'
@@ -257,6 +269,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApplicantRoute: typeof ApplicantRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ProducerRoute: typeof ProducerRouteWithChildren
 }
 
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       path: '/applicant'
       fullPath: '/applicant'
       preLoaderRoute: typeof ApplicantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/producer': {
@@ -453,6 +473,7 @@ const ProducerRouteWithChildren = ProducerRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApplicantRoute: ApplicantRouteWithChildren,
+  LoginRoute: LoginRoute,
   ProducerRoute: ProducerRouteWithChildren,
 }
 export const routeTree = rootRouteImport

@@ -10,6 +10,7 @@ import {
   Video,
   X,
 } from "lucide-react";
+import { QuestionAnswerList } from "@/components/question-answer-list";
 import { ApplyBadge } from "@/components/status-badge";
 import { useStore, type Photo } from "@/lib/store";
 
@@ -212,16 +213,7 @@ function ApplicationDetail() {
         {show.additionalQuestions.length === 0 ? (
           <p className="text-sm text-muted-foreground">추가 질문이 없는 공고입니다.</p>
         ) : (
-          <dl className="space-y-4">
-            {show.additionalQuestions.map((question) => (
-              <div key={question.id}>
-                <dt className="text-sm font-semibold">{question.question}</dt>
-                <dd className="mt-2 rounded-xl bg-secondary/50 p-4 text-sm text-muted-foreground">
-                  {application.answers[question.id] || "미응답"}
-                </dd>
-              </div>
-            ))}
-          </dl>
+          <QuestionAnswerList questions={show.additionalQuestions} answers={application.answers} />
         )}
       </Section>
 

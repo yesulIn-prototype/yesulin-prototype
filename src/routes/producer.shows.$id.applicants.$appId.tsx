@@ -9,6 +9,7 @@ import {
 } from "@/lib/store";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { PhotoTile, VideoTile } from "@/components/poster";
+import { QuestionAnswerList } from "@/components/question-answer-list";
 import { StageResultBadge } from "@/components/status-badge";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -323,16 +324,7 @@ function ApplicantDetail() {
 
           {show.additionalQuestions.length > 0 && (
             <Section title="추가 질문 답변">
-              <ul className="space-y-3">
-                {show.additionalQuestions.map((q) => (
-                  <li key={q.id}>
-                    <div className="text-xs text-muted-foreground">{q.question}</div>
-                    <div className="mt-1 text-sm">
-                      {app.answers[q.id] || <span className="text-muted-foreground">미응답</span>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <QuestionAnswerList questions={show.additionalQuestions} answers={app.answers} />
             </Section>
           )}
 

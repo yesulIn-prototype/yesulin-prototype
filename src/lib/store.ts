@@ -192,6 +192,15 @@ export type TempAccount = {
 
 export const TEMP_ACCOUNTS: TempAccount[] = [
   {
+    id: "producer-ninejin",
+    username: "ninejin",
+    password: "1234",
+    role: "producer",
+    name: "나인진엔터테인먼트",
+    producerKey: "ninejin",
+    logo: "/images/ninejin-group-logo.png",
+  },
+  {
     id: "producer-company-connect",
     username: "connect",
     password: "1234",
@@ -199,14 +208,6 @@ export const TEMP_ACCOUNTS: TempAccount[] = [
     name: "컴퍼니연결",
     producerKey: "company-connect",
     logo: "/images/company-connect-logo.png",
-  },
-  {
-    id: "producer-ninejin",
-    username: "nine",
-    password: "1234",
-    role: "producer",
-    name: "나인진엔터테인먼트",
-    producerKey: "ninejin",
   },
   {
     id: "producer-test",
