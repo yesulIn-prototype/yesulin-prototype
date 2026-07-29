@@ -9,15 +9,14 @@ import {
   primaryButtonClass,
   secondaryButtonClass,
 } from "@/components/workspace-ui";
-import { daysUntil, useStore } from "@/lib/store";
+import { daysUntil, useProducerWorkspace, useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/producer/")({
   component: ProducerHome,
 });
 
 function ProducerHome() {
-  const shows = useStore((state) => state.shows);
-  const applications = useStore((state) => state.applications);
+  const { shows, applications } = useProducerWorkspace();
   const getApplicantById = useStore((state) => state.getApplicantById);
   const activeShows = shows.filter(
     (show) => show.status === "모집 중" && show.publicationStatus !== "임시 저장",
@@ -52,7 +51,12 @@ function ProducerHome() {
           value={`${unreviewed.length}건`}
           tone={unreviewed.length > 0 ? "warning" : "default"}
         />
-        <Metric label="숏리스트" value={`${shortlisted.length}명`} tone="success" />
+        <Metric
+          label="관심 지원자"
+          value={`${shortlisted.length}명`}
+          hint="다시 검토하려고 별표 표시한 지원자"
+          tone="success"
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
@@ -204,7 +208,10 @@ function ProducerHome() {
       </Surface>
 
       {shortlisted.length > 0 && (
-        <Surface title="숏리스트">
+        <Surface
+          title="관심 지원자"
+          description="캐스팅 후보로 다시 확인할 수 있도록 별표 표시해 둔 지원자입니다."
+        >
           <div className="flex flex-wrap gap-2">
             {shortlisted.map((application) => (
               <Link

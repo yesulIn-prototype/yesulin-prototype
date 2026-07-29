@@ -2,19 +2,21 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useStore, daysUntil, getPostingTitle, getShowActivityTimestamp } from "@/lib/store";
 import { Poster } from "@/components/poster";
-import { DeadlineBadge } from "@/components/status-badge";
-import { Bookmark, CalendarDays, Clock3, RotateCcw, Search } from "lucide-react";
+import { Bell, BellRing, Bookmark, CalendarDays, Clock3, RotateCcw, Search } from "lucide-react";
 
 export const Route = createFileRoute("/applicant/shows/")({
   component: ShowsList,
 });
 
 function ShowsList() {
+  const applicantId = useStore((s) => s.applicant.id);
   const shows = useStore((s) => s.shows);
   const allApps = useStore((s) => s.applications);
   const favoriteShowIds = useStore((s) => s.favoriteShowIds);
   const toggleFavoriteShow = useStore((s) => s.toggleFavoriteShow);
-  const applications = allApps.filter((a) => a.applicantId === "me");
+  const notificationShowIds = useStore((s) => s.notificationShowIds);
+  const toggleShowNotification = useStore((s) => s.toggleShowNotification);
+  const applications = allApps.filter((a) => a.applicantId === applicantId);
   const appliedIds = new Set(applications.map((a) => a.showId));
 
   const [q, setQ] = useState("");
@@ -97,6 +99,7 @@ function ShowsList() {
         {filtered.map((show) => {
           const applied = appliedIds.has(show.id);
           const favorite = favoriteShowIds.includes(show.id);
+          const notificationEnabled = notificationShowIds.includes(show.id);
           return (
             <article
               key={show.id}
@@ -115,12 +118,36 @@ function ShowsList() {
               >
                 <Bookmark className={`h-4 w-4 ${favorite ? "fill-current" : ""}`} />
               </button>
+              {show.status === "모집 마감" && (
+                <button
+                  type="button"
+                  aria-label={
+                    notificationEnabled
+                      ? `${show.title} 추가 모집 알림 해제`
+                      : `${show.title} 추가 모집 알림 받기`
+                  }
+                  aria-pressed={notificationEnabled}
+                  onClick={() => toggleShowNotification(show.id)}
+                  className={`absolute right-3 top-16 z-20 inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-2 text-xs font-bold shadow-lg backdrop-blur transition sm:bottom-3 sm:left-3 sm:right-auto sm:top-auto ${
+                    notificationEnabled
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-white/70 bg-background/95 text-foreground hover:border-primary"
+                  }`}
+                >
+                  {notificationEnabled ? (
+                    <BellRing className="h-3.5 w-3.5" />
+                  ) : (
+                    <Bell className="h-3.5 w-3.5" />
+                  )}
+                  {notificationEnabled ? "알림 받는 중" : "알림받기"}
+                </button>
+              )}
               <Link
                 to="/applicant/shows/$id"
                 params={{ id: show.id }}
-                className="group grid min-h-[188px] sm:grid-cols-[128px_1fr]"
+                className="group grid min-h-[210px] sm:grid-cols-[180px_1fr]"
               >
-                <div className="relative min-h-32 sm:min-h-full">
+                <div className="relative min-h-48 sm:min-h-full">
                   <Poster
                     title={show.title}
                     color={show.posterColor}
@@ -130,16 +157,20 @@ function ShowsList() {
                     showText={false}
                     className="absolute inset-0 h-full w-full rounded-none"
                   />
-                  <div className="absolute left-3 top-3 flex items-center gap-1.5">
+                  <div className="absolute left-3 top-3 flex flex-col items-start gap-2">
                     {show.status === "모집 중" ? (
-                      <DeadlineBadge daysLeft={daysUntil(show.deadline)} />
+                      <span className="whitespace-nowrap rounded-full border border-white/30 bg-black/80 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
+                        {daysUntil(show.deadline) === 0
+                          ? "오늘 마감"
+                          : `D-${daysUntil(show.deadline)}`}
+                      </span>
                     ) : (
-                      <span className="rounded-full border border-white/30 bg-black/40 px-2.5 py-0.5 text-[11px] font-medium text-white backdrop-blur">
+                      <span className="whitespace-nowrap rounded-full border border-white/30 bg-black/80 px-3 py-1.5 text-xs font-bold text-white shadow-lg backdrop-blur">
                         {show.status}
                       </span>
                     )}
                     {applied && (
-                      <span className="rounded-full border border-success/40 bg-success/90 px-2.5 py-0.5 text-[11px] font-semibold text-white shadow">
+                      <span className="whitespace-nowrap rounded-full border border-white bg-white px-3 py-1.5 text-xs font-bold text-success shadow-lg">
                         지원 완료
                       </span>
                     )}
@@ -175,7 +206,9 @@ function ShowsList() {
                     <span className="inline-flex items-center gap-1">
                       <Clock3 className="h-3.5 w-3.5" /> 마감 {show.deadline}
                     </span>
-                    <span>필수 자료 {show.requiredItems.length}개</span>
+                    <span className="whitespace-nowrap">
+                      필수 자료 {show.requiredItems.length}개
+                    </span>
                   </div>
                   <div className="mt-auto inline-flex items-center gap-1 pt-3 text-sm font-semibold text-primary transition-all group-hover:gap-2">
                     공고 상세 확인 →

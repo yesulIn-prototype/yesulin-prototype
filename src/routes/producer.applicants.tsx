@@ -4,6 +4,7 @@ import { StageResultBadge } from "@/components/status-badge";
 import {
   getApplicationStageProgress,
   getAuditionStages,
+  useProducerWorkspace,
   useStore,
   type StageResult,
 } from "@/lib/store";
@@ -14,8 +15,7 @@ export const Route = createFileRoute("/producer/applicants")({
 });
 
 function AllApplicants() {
-  const applications = useStore((s) => s.applications);
-  const shows = useStore((s) => s.shows);
+  const { shows, applications } = useProducerWorkspace();
   const getApplicantById = useStore((s) => s.getApplicantById);
   const [query, setQuery] = useState("");
   const [showFilter, setShowFilter] = useState("전체");
@@ -139,13 +139,13 @@ function AllApplicants() {
                 params={{ id: show.id, appId: application.id }}
                 className="group overflow-hidden rounded-2xl border border-border bg-card transition hover:-translate-y-0.5 hover:border-primary hover:shadow-[var(--shadow-elev-2)]"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
+                <div className="relative aspect-[4/3] overflow-hidden bg-secondary/60 p-2">
                   {photo?.image ? (
                     <img
                       src={photo.image}
                       alt={`${application.applicantName} 지원자 프로필`}
                       loading="lazy"
-                      className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
+                      className="h-full w-full rounded-xl object-contain object-center transition duration-300 group-hover:scale-[1.01]"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-5xl font-semibold text-muted-foreground/40">

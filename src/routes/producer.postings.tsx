@@ -6,6 +6,7 @@ import {
   getPerformanceId,
   getPostingTitle,
   getShowActivityTimestamp,
+  useProducerWorkspace,
   useStore,
   type Show,
 } from "@/lib/store";
@@ -25,8 +26,7 @@ export const Route = createFileRoute("/producer/postings")({
 
 function PostingsManagement() {
   const { performance: initialPerformance } = Route.useSearch();
-  const shows = useStore((state) => state.shows);
-  const applications = useStore((state) => state.applications);
+  const { shows, applications } = useProducerWorkspace();
   const bumpShow = useStore((state) => state.bumpShow);
   const [performanceFilter, setPerformanceFilter] = useState(initialPerformance ?? "전체");
   const [notice, setNotice] = useState("");

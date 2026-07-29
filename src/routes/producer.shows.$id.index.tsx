@@ -6,6 +6,7 @@ import {
   getApplicationStageProgress,
   getAuditionStages,
   getPostingTitle,
+  useProducerWorkspace,
   type Applicant,
   type Application,
   type AuditionStage,
@@ -65,8 +66,8 @@ type RowModel = {
 function ShowApplicants() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
-  const show = useStore((s) => s.shows.find((item) => item.id === id));
-  const allApplications = useStore((s) => s.applications);
+  const { shows, applications: allApplications } = useProducerWorkspace();
+  const show = shows.find((item) => item.id === id);
   const removeShow = useStore((s) => s.removeShow);
   const sendShowResults = useStore((s) => s.sendShowResults);
   const updateStageProgress = useStore((s) => s.updateStageProgress);

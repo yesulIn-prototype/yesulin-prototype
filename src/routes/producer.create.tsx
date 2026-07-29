@@ -17,9 +17,11 @@ import {
 } from "lucide-react";
 import {
   getPerformanceId,
+  useProducerWorkspace,
   useStore,
   type AdditionalQuestion,
   type AuditionStage,
+  type ShowDetailImage,
   type ShowRole,
 } from "@/lib/store";
 
@@ -70,7 +72,7 @@ const defaultAuditionStages = (): AuditionStage[] => [
 function CreatePosting() {
   const navigate = useNavigate();
   const saveShow = useStore((state) => state.saveShow);
-  const shows = useStore((state) => state.shows);
+  const { account, shows } = useProducerWorkspace();
   const performances = useMemo(() => {
     const groups = new Map<string, string>();
     for (const show of shows) groups.set(getPerformanceId(show), show.title);
@@ -79,9 +81,11 @@ function CreatePosting() {
   const [performanceId, setPerformanceId] = useState("new");
   const [title, setTitle] = useState("");
   const [postingTitle, setPostingTitle] = useState("");
-  const [producer, setProducer] = useState("컴퍼니연결");
+  const [producer, setProducer] = useState(account?.name ?? "테스트");
   const [kind, setKind] = useState("뮤지컬");
   const [description, setDescription] = useState("");
+  const [detailText, setDetailText] = useState("");
+  const [detailImages, setDetailImages] = useState<ShowDetailImage[]>([]);
   const [venue, setVenue] = useState("");
   const [compensation, setCompensation] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -126,16 +130,26 @@ function CreatePosting() {
     [],
   );
 
-  function applyMockResult() {
+  function applyMockResult(detailImage = MOCK_POSTER_IMAGE, detailImageName = MOCK_POSTER_NAME) {
     const sharedRequirement =
       "전 배역 트리플 캐스트 · 전체 연습 및 공연 일정 참여 · 관객과 열린 태도로 소통 가능한 배우";
 
     setTitle("연극 식당: 매일이 크리스마스");
-    setProducer("컴퍼니 연결 × 남극장");
+    setProducer(account?.name ?? "테스트");
     setKind("연극");
     setDescription(
       "세상의 모든 숫자가 사라진 날, 자신의 식당을 매일 크리스마스로 꾸미는 남자와 크리스마스에 운명을 만날 것이라 믿는 여자가 서로의 하루가 되어가는 사랑스러운 로맨틱 코미디입니다. 공연 중 다이닝 씨어터 형식의 음식 체험 프로그램과 관객과의 직접적인 소통 및 인터랙션이 포함됩니다.",
     );
+    setDetailText(
+      "오디션은 자유연기와 간단한 즉흥 장면으로 진행됩니다.\n\n서류 합격자에게 배역별 지정 장면과 세부 시간을 개별 안내합니다.",
+    );
+    setDetailImages([
+      {
+        id: crypto.randomUUID(),
+        name: detailImageName,
+        image: detailImage,
+      },
+    ]);
     setVenue("남극장");
     setCompensation("개별 협의");
     setDeadline("2026.07.31 20:00");
@@ -200,7 +214,7 @@ function CreatePosting() {
     setOcrMessage("이미지에서 일정, 배역, 지원 조건을 찾고 있어요.");
 
     analysisTimer.current = window.setTimeout(() => {
-      applyMockResult();
+      applyMockResult(image, fileName);
       setOcrStatus("complete");
       setOcrMessage("공연 정보, 모집 배역, 제출 자료를 자동으로 채웠습니다.");
       analysisTimer.current = null;
@@ -228,6 +242,32 @@ function CreatePosting() {
       setOcrStatus("error");
       setOcrMessage("이미지를 읽지 못했습니다. 다른 파일로 다시 시도해 주세요.");
     }
+  }
+
+  async function processDetailImages(files: File[]) {
+    const availableSlots = Math.max(0, 5 - detailImages.length);
+    const selectedFiles = files
+      .filter((file) => file.type.startsWith("image/") && file.size <= MAX_IMAGE_SIZE)
+      .slice(0, availableSlots);
+
+    if (selectedFiles.length === 0) {
+      setNotice(
+        availableSlots === 0
+          ? "상세 이미지는 최대 5장까지 등록할 수 있습니다."
+          : "PNG, JPG, WEBP 형식의 10MB 이하 이미지를 선택해 주세요.",
+      );
+      return;
+    }
+
+    const loadedImages = await Promise.all(
+      selectedFiles.map(async (file) => ({
+        id: crypto.randomUUID(),
+        name: file.name,
+        image: await fileToDataUrl(file),
+      })),
+    );
+    setDetailImages((current) => [...current, ...loadedImages].slice(0, 5));
+    setNotice(`${loadedImages.length}장의 상세 이미지를 추가했습니다.`);
   }
 
   function validate(forPublish: boolean) {
@@ -263,9 +303,11 @@ function CreatePosting() {
       postingTitle:
         postingTitle.trim() || `${recruitmentRound}차 ${kind === "연극" ? "배우" : "출연진"} 모집`,
       recruitmentRound,
-      producer: producer.trim(),
+      producer: account?.name ?? producer.trim(),
       kind,
       description,
+      detailText: detailText.trim() || undefined,
+      detailImages,
       venue,
       compensation: compensation || "협의",
       deadline: deadline.replaceAll("-", "."),
@@ -572,6 +614,8 @@ function CreatePosting() {
                     setKind(linkedShow.kind);
                     setVenue(linkedShow.venue);
                     setPosterImage(linkedShow.posterImage);
+                    setDetailText(linkedShow.detailText ?? "");
+                    setDetailImages(linkedShow.detailImages ?? []);
                   }}
                   className="min-h-11 rounded-xl border border-input bg-background px-3"
                 >
@@ -745,6 +789,110 @@ function CreatePosting() {
 
           <FormSection
             number="02"
+            title="공고 상세 콘텐츠"
+            description="구조화된 공연 정보 아래에 노출할 긴 안내문과 상세 이미지를 등록합니다."
+          >
+            <div className="space-y-5">
+              <label className="grid gap-1.5 text-sm font-medium" htmlFor="show-detail-text">
+                상세 안내문
+                <textarea
+                  id="show-detail-text"
+                  value={detailText}
+                  onChange={(event) => setDetailText(event.target.value)}
+                  rows={8}
+                  placeholder={
+                    "오디션 진행 방식, 준비 사항, 유의 사항 등 지원자가 확인해야 할 상세 내용을 입력하세요.\n\n빈 줄을 넣으면 문단이 구분됩니다."
+                  }
+                  className="rounded-xl border border-input bg-background p-3 text-sm leading-6"
+                />
+                <span className="text-xs font-normal text-muted-foreground">
+                  입력한 줄바꿈과 문단 구분이 지원자 화면에도 그대로 표시됩니다.
+                </span>
+              </label>
+
+              <div>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-medium">상세 이미지</div>
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      세로형 상세 공고 이미지도 원본 비율로 표시됩니다. 최대 5장
+                    </div>
+                  </div>
+                  <label
+                    htmlFor="detail-images"
+                    className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border border-input bg-background px-3 text-sm font-semibold hover:bg-secondary"
+                  >
+                    <ImagePlus className="h-4 w-4" /> 이미지 추가
+                  </label>
+                  <input
+                    id="detail-images"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    multiple
+                    className="sr-only"
+                    onChange={(event) => {
+                      const files = Array.from(event.target.files ?? []);
+                      event.target.value = "";
+                      void processDetailImages(files);
+                    }}
+                  />
+                </div>
+
+                <div
+                  className="rounded-xl border border-dashed border-input bg-surface p-4"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    void processDetailImages(Array.from(event.dataTransfer.files));
+                  }}
+                >
+                  {detailImages.length === 0 ? (
+                    <div className="flex min-h-28 flex-col items-center justify-center text-center text-sm text-muted-foreground">
+                      <FileImage className="mb-2 h-6 w-6" />
+                      상세 이미지를 끌어놓거나 이미지 추가 버튼을 이용하세요.
+                    </div>
+                  ) : (
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {detailImages.map((detailImage, index) => (
+                        <div
+                          key={detailImage.id}
+                          className="overflow-hidden rounded-xl border border-border bg-card"
+                        >
+                          <div className="flex aspect-[4/3] items-center justify-center bg-secondary/60">
+                            <img
+                              src={detailImage.image}
+                              alt={`${index + 1}번째 상세 이미지`}
+                              className="h-full w-full object-contain"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2 p-3">
+                            <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                              {detailImage.name}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setDetailImages((current) =>
+                                  current.filter((item) => item.id !== detailImage.id),
+                                )
+                              }
+                              aria-label={`${detailImage.name} 삭제`}
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection
+            number="03"
             title="모집 배역"
             description="지원자는 여기에서 지원할 배역을 선택합니다."
             action={
@@ -828,7 +976,7 @@ function CreatePosting() {
           </FormSection>
 
           <FormSection
-            number="03"
+            number="04"
             title="제출 자료"
             description="정말 필요한 자료만 요청하면 지원 완료율이 높아집니다."
             action={isOcrComplete ? <AutoFilledBadge /> : undefined}
@@ -880,7 +1028,7 @@ function CreatePosting() {
           </FormSection>
 
           <FormSection
-            number="04"
+            number="05"
             title="추가 질문"
             description="심사에 실제로 사용할 질문만 추가하세요."
             action={
@@ -1003,6 +1151,28 @@ function CreatePosting() {
                 )}
               </div>
             </div>
+            {(detailText || detailImages.length > 0) && (
+              <div className="mt-6 rounded-xl border border-border p-4">
+                <div className="text-xs font-semibold text-muted-foreground">공고 상세 안내</div>
+                {detailText && (
+                  <p className="mt-2 line-clamp-6 whitespace-pre-wrap text-xs leading-5">
+                    {detailText}
+                  </p>
+                )}
+                {detailImages.length > 0 && (
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {detailImages.slice(0, 4).map((detailImage) => (
+                      <img
+                        key={detailImage.id}
+                        src={detailImage.image}
+                        alt=""
+                        className="aspect-square w-full rounded-lg bg-secondary object-contain"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="mt-6 rounded-xl bg-primary p-4 text-primary-foreground">
               <div className="text-xs opacity-70">제출 자료</div>
               <div className="mt-1 font-semibold">

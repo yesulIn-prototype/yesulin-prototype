@@ -28,7 +28,10 @@ const reviewMap: Record<ReviewStatus, BadgeStyle> = {
   },
   "검토 중": { chip: "bg-secondary text-secondary-foreground border-border", dot: "bg-primary/60" },
   "오디션 대상": { chip: "bg-success/12 text-success border-success/30", dot: "bg-success" },
-  보류: { chip: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/60" },
+  보류: {
+    chip: "bg-warning/20 text-warning-foreground border-warning/60 font-semibold shadow-sm",
+    dot: "bg-warning-foreground",
+  },
   합격: { chip: "bg-primary text-primary-foreground border-primary", dot: "bg-primary-foreground" },
   불합격: {
     chip: "bg-destructive/10 text-destructive border-destructive/25",
@@ -50,7 +53,10 @@ const stageResultMap: Record<StageResult, BadgeStyle> = {
     chip: "bg-destructive/10 text-destructive border-destructive/25",
     dot: "bg-destructive",
   },
-  보류: { chip: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/60" },
+  보류: {
+    chip: "bg-warning/20 text-warning-foreground border-warning/60 font-semibold shadow-sm",
+    dot: "bg-warning-foreground",
+  },
   불참: {
     chip: "bg-secondary text-secondary-foreground border-border",
     dot: "bg-muted-foreground",

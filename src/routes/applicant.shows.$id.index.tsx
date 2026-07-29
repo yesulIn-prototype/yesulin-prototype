@@ -5,7 +5,8 @@ import { trackAnalyticsEvent } from "@/lib/analytics";
 import { Poster } from "@/components/poster";
 import { DeadlineBadge } from "@/components/status-badge";
 import {
-  AlertCircle,
+  Bell,
+  BellRing,
   CalendarDays,
   MapPin,
   Users2,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ExternalLink,
+  FileImage,
 } from "lucide-react";
 
 export const Route = createFileRoute("/applicant/shows/$id/")({
@@ -21,10 +23,13 @@ export const Route = createFileRoute("/applicant/shows/$id/")({
 
 function ShowDetail() {
   const { id } = Route.useParams();
+  const applicantId = useStore((s) => s.applicant.id);
   const show = useStore((s) => s.shows.find((sh) => sh.id === id));
   const myApp = useStore((s) =>
-    s.applications.find((a) => a.showId === id && a.applicantId === "me"),
+    s.applications.find((a) => a.showId === id && a.applicantId === applicantId),
   );
+  const notificationEnabled = useStore((s) => s.notificationShowIds.includes(id));
+  const toggleShowNotification = useStore((s) => s.toggleShowNotification);
   const trackedShowId = useRef<string | null>(null);
 
   useEffect(() => {
@@ -148,10 +153,49 @@ function ShowDetail() {
         <RequirementCard title="선택 제출 항목" items={show.optionalItems} />
       </section>
 
+      {(show.detailText || (show.detailImages?.length ?? 0) > 0) && (
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center gap-2">
+            <FileImage className="h-4 w-4 text-primary" />
+            <h2 className="text-base font-semibold">공고 상세 안내</h2>
+          </div>
+          {show.detailText && (
+            <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-foreground/80">
+              {show.detailText}
+            </p>
+          )}
+          {(show.detailImages?.length ?? 0) > 0 && (
+            <div className="mt-5 space-y-4">
+              {show.detailImages?.map((detailImage) => (
+                <figure
+                  key={detailImage.id}
+                  className="overflow-hidden rounded-xl border border-border bg-surface"
+                >
+                  <img
+                    src={detailImage.image}
+                    alt={detailImage.name}
+                    className="block h-auto w-full"
+                  />
+                  <figcaption className="border-t border-border px-4 py-3 text-xs text-muted-foreground">
+                    {detailImage.name}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       <div className="sticky bottom-[5.4rem] z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/95 p-4 shadow-[var(--shadow-elev-3)] backdrop-blur md:bottom-4">
         <div className="text-sm">
           <div className="font-medium">
-            {myApp ? "이미 지원한 공연입니다" : "저장된 프로필과 자료로 바로 지원할 수 있습니다"}
+            {myApp
+              ? "이미 지원한 공연입니다"
+              : isOpen
+                ? "저장된 프로필과 자료로 바로 지원할 수 있습니다"
+                : notificationEnabled
+                  ? "추가 모집 공고 알림을 받고 있습니다"
+                  : "추가 모집 공고가 열리면 알려드릴게요"}
           </div>
           <div className="text-xs text-muted-foreground">
             {isOpen
@@ -159,14 +203,15 @@ function ShowDetail() {
               : `${show.deadline}에 마감된 공고입니다`}
           </div>
         </div>
-        {myApp ? (
+        {myApp && (
           <Link
             to="/applicant/applications"
             className="rounded-md border border-input bg-background px-5 py-2.5 text-sm font-medium hover:bg-secondary"
           >
             제출한 지원서 보기
           </Link>
-        ) : isOpen ? (
+        )}
+        {!myApp && isOpen && (
           <Link
             to="/applicant/shows/$id/apply"
             params={{ id: show.id }}
@@ -174,13 +219,20 @@ function ShowDetail() {
           >
             지원서 작성하기
           </Link>
-        ) : (
+        )}
+        {!isOpen && (
           <button
             type="button"
-            disabled
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-muted px-5 py-2.5 text-sm font-medium text-muted-foreground sm:w-auto"
+            aria-pressed={notificationEnabled}
+            onClick={() => toggleShowNotification(show.id)}
+            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-md px-5 py-2.5 text-sm font-semibold shadow-sm transition sm:w-auto ${
+              notificationEnabled
+                ? "bg-primary text-primary-foreground"
+                : "border border-input bg-background text-foreground hover:border-primary"
+            }`}
           >
-            <AlertCircle className="h-4 w-4" /> 지원이 마감되었습니다
+            {notificationEnabled ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+            {notificationEnabled ? "알림 받는 중" : "알림받기"}
           </button>
         )}
       </div>

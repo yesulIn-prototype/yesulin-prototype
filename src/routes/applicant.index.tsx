@@ -55,7 +55,9 @@ function ApplicantHome() {
   const allApplications = useStore((state) => state.applications);
   const favoriteShowIds = useStore((state) => state.favoriteShowIds);
   const manualSchedules = useStore((state) => state.manualSchedules);
-  const applications = allApplications.filter((application) => application.applicantId === "me");
+  const applications = allApplications.filter(
+    (application) => application.applicantId === applicant.id,
+  );
 
   const openShows = shows
     .filter((show) => show.status === "모집 중" && daysUntil(show.deadline) >= 0)

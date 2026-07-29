@@ -5,7 +5,7 @@ import {
   getPerformanceId,
   getPostingTitle,
   getShowActivityTimestamp,
-  useStore,
+  useProducerWorkspace,
   type Show,
 } from "@/lib/store";
 import { Poster } from "@/components/poster";
@@ -22,8 +22,7 @@ type PerformanceGroup = {
 };
 
 function ShowsList() {
-  const shows = useStore((state) => state.shows);
-  const applications = useStore((state) => state.applications);
+  const { shows, applications } = useProducerWorkspace();
 
   const performances = useMemo(() => {
     const groups = new Map<string, PerformanceGroup>();
