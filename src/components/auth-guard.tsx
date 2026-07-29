@@ -16,7 +16,7 @@ export function AuthGuard({ role, children }: { role: AccountRole; children: Rea
 
   useEffect(() => {
     if (hydrated && !authorized) {
-      void navigate({ to: "/", replace: true });
+      void navigate({ to: "/login", replace: true });
     }
   }, [authorized, hydrated, navigate]);
 

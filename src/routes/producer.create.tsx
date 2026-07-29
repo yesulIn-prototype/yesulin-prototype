@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  CalendarClock,
   CheckCircle2,
+  CircleAlert,
   Eye,
   FileImage,
   ImagePlus,
@@ -15,6 +17,11 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import {
+  formatPostingDateRange,
+  formatPostingDateTime,
+  getPostingScheduleIssues,
+} from "@/lib/posting-schedule";
 import {
   getPerformanceId,
   useProducerWorkspace,
@@ -89,10 +96,13 @@ function CreatePosting() {
   const [venue, setVenue] = useState("");
   const [compensation, setCompensation] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [auditionDate, setAuditionDate] = useState("");
+  const [auditionStart, setAuditionStart] = useState("");
+  const [auditionEnd, setAuditionEnd] = useState("");
   const [resultAnnouncementDate, setResultAnnouncementDate] = useState("");
-  const [rehearsalPeriod, setRehearsalPeriod] = useState("");
-  const [showPeriod, setShowPeriod] = useState("");
+  const [rehearsalStart, setRehearsalStart] = useState("");
+  const [rehearsalEnd, setRehearsalEnd] = useState("");
+  const [showStart, setShowStart] = useState("");
+  const [showEnd, setShowEnd] = useState("");
   const [auditionStages, setAuditionStages] = useState<AuditionStage[]>(defaultAuditionStages);
   const [roles, setRoles] = useState<ShowRole[]>([emptyRole()]);
   const [posterImage, setPosterImage] = useState("");
@@ -122,6 +132,37 @@ function CreatePosting() {
   const validRoles = useMemo(() => roles.filter((role) => role.name.trim()), [roles]);
   const isAnalyzing = ocrStatus === "reading" || ocrStatus === "analyzing";
   const isOcrComplete = ocrStatus === "complete";
+  const schedule = useMemo(
+    () => ({
+      deadline,
+      auditionStart,
+      auditionEnd,
+      resultAnnouncement: resultAnnouncementDate,
+      rehearsalStart,
+      rehearsalEnd,
+      showStart,
+      showEnd,
+    }),
+    [
+      auditionEnd,
+      auditionStart,
+      deadline,
+      rehearsalEnd,
+      rehearsalStart,
+      resultAnnouncementDate,
+      showEnd,
+      showStart,
+    ],
+  );
+  const scheduleIssues = useMemo(() => getPostingScheduleIssues(schedule), [schedule]);
+  const scheduleIssueFields = useMemo(
+    () => new Set(scheduleIssues.map((issue) => issue.field)),
+    [scheduleIssues],
+  );
+  const hasScheduleInput = Object.values(schedule).some(Boolean);
+  const formattedAuditionDate = formatPostingDateRange(auditionStart, auditionEnd);
+  const formattedRehearsalPeriod = formatPostingDateRange(rehearsalStart, rehearsalEnd);
+  const formattedShowPeriod = formatPostingDateRange(showStart, showEnd);
 
   useEffect(
     () => () => {
@@ -152,11 +193,14 @@ function CreatePosting() {
     ]);
     setVenue("남극장");
     setCompensation("개별 협의");
-    setDeadline("2026.07.31 20:00");
-    setAuditionDate("2026.08.03 – 2026.08.05");
-    setResultAnnouncementDate("2026.08.10");
-    setRehearsalPeriod("2026.08.24부터 평일 13:00–17:00");
-    setShowPeriod("2026.10.07 – 2027.01.10");
+    setDeadline("2026-07-31T20:00");
+    setAuditionStart("2026-08-03");
+    setAuditionEnd("2026-08-05");
+    setResultAnnouncementDate("2026-08-10T15:00");
+    setRehearsalStart("2026-08-24");
+    setRehearsalEnd("2026-10-06");
+    setShowStart("2026-10-07");
+    setShowEnd("2027-01-10");
     setRoles([
       {
         id: crypto.randomUUID(),
@@ -277,6 +321,7 @@ function CreatePosting() {
     if (!producer.trim()) next.push("제작사를 입력해 주세요.");
     if (!deadline) next.push("지원 마감일을 선택해 주세요.");
     if (!resultAnnouncementDate) next.push("결과 발표일을 입력해 주세요.");
+    next.push(...scheduleIssues.map((issue) => issue.message));
     if (validRoles.length === 0) next.push("한 개 이상의 모집 배역을 입력해 주세요.");
     return next;
   }
@@ -310,25 +355,25 @@ function CreatePosting() {
       detailImages,
       venue,
       compensation: compensation || "협의",
-      deadline: deadline.replaceAll("-", "."),
-      auditionDate: auditionDate.replaceAll("-", "."),
-      resultAnnouncementDate: resultAnnouncementDate.replaceAll("-", "."),
+      deadline: formatPostingDateTime(deadline),
+      auditionDate: formattedAuditionDate,
+      resultAnnouncementDate: formatPostingDateTime(resultAnnouncementDate),
       auditionStages: auditionStages.map((stage, index) => ({
         ...stage,
         order: index + 1,
         date:
           stage.type === "오디션" &&
           index === auditionStages.findIndex((item) => item.type === "오디션")
-            ? auditionDate.replaceAll("-", ".")
+            ? formattedAuditionDate
             : stage.date,
         venue: stage.type === "오디션" ? venue : undefined,
         resultAnnouncementDate:
           stage.type === "최종"
-            ? resultAnnouncementDate.replaceAll("-", ".")
+            ? formatPostingDateTime(resultAnnouncementDate)
             : stage.resultAnnouncementDate,
       })),
-      rehearsalPeriod,
-      showPeriod,
+      rehearsalPeriod: formattedRehearsalPeriod,
+      showPeriod: formattedShowPeriod,
       roles: validRoles.length > 0 ? validRoles : roles,
       posterColor: "#171717",
       posterImage,
@@ -667,29 +712,76 @@ function CreatePosting() {
                 value={compensation}
                 onChange={setCompensation}
               />
-              <Field
-                id="deadline"
-                label="지원 마감일"
-                value={deadline}
-                onChange={setDeadline}
-                placeholder="2026.07.31 20:00"
-                required
-              />
-              <Field
-                id="audition-date"
-                label="오디션 예정일"
-                value={auditionDate}
-                onChange={setAuditionDate}
-                placeholder="2026.08.03 – 2026.08.05"
-              />
-              <Field
-                id="result-announcement-date"
-                label="결과 발표일"
-                value={resultAnnouncementDate}
-                onChange={setResultAnnouncementDate}
-                placeholder="2026.08.10"
-                required
-              />
+              <fieldset className="rounded-xl border border-border bg-surface p-4 md:col-span-2">
+                <legend className="px-1 text-sm font-semibold">지원 및 공연 일정</legend>
+                <p className="mb-4 text-xs leading-5 text-muted-foreground">
+                  날짜를 선택하면 지원 마감부터 공연까지의 순서를 자동으로 확인합니다.
+                </p>
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ScheduleInput
+                    id="deadline"
+                    label="지원 마감"
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={setDeadline}
+                    required
+                    invalid={scheduleIssueFields.has("deadline")}
+                    hint="마감 시간까지 정확히 선택해 주세요."
+                  />
+                  <ScheduleRangeInput
+                    id="audition"
+                    label="오디션"
+                    start={auditionStart}
+                    end={auditionEnd}
+                    onStartChange={setAuditionStart}
+                    onEndChange={setAuditionEnd}
+                    startMin={dateOnly(deadline)}
+                    invalidStart={scheduleIssueFields.has("auditionStart")}
+                    invalidEnd={scheduleIssueFields.has("auditionEnd")}
+                  />
+                  <ScheduleInput
+                    id="result-announcement-date"
+                    label="결과 발표"
+                    type="datetime-local"
+                    value={resultAnnouncementDate}
+                    onChange={setResultAnnouncementDate}
+                    min={dateTimeStart(auditionEnd || auditionStart || deadline)}
+                    required
+                    invalid={scheduleIssueFields.has("resultAnnouncement")}
+                    hint="지원자에게 결과를 공개할 날짜와 시간입니다."
+                  />
+                  <ScheduleRangeInput
+                    id="rehearsal"
+                    label="연습"
+                    start={rehearsalStart}
+                    end={rehearsalEnd}
+                    onStartChange={setRehearsalStart}
+                    onEndChange={setRehearsalEnd}
+                    startMin={dateOnly(resultAnnouncementDate)}
+                    invalidStart={scheduleIssueFields.has("rehearsalStart")}
+                    invalidEnd={scheduleIssueFields.has("rehearsalEnd")}
+                  />
+                  <ScheduleRangeInput
+                    id="show"
+                    label="공연"
+                    start={showStart}
+                    end={showEnd}
+                    onStartChange={setShowStart}
+                    onEndChange={setShowEnd}
+                    startMin={rehearsalEnd || rehearsalStart}
+                    invalidStart={scheduleIssueFields.has("showStart")}
+                    invalidEnd={scheduleIssueFields.has("showEnd")}
+                    className="md:col-span-2"
+                  />
+                </div>
+
+                <ScheduleValidationStatus
+                  issues={scheduleIssues.map((issue) => issue.message)}
+                  hasScheduleInput={hasScheduleInput}
+                  complete={Boolean(deadline && resultAnnouncementDate)}
+                />
+              </fieldset>
               <fieldset className="rounded-xl border border-border bg-surface p-4 md:col-span-2">
                 <legend className="px-1 text-sm font-semibold">전형 단계 설정</legend>
                 <p className="mb-3 text-xs text-muted-foreground">
@@ -757,20 +849,6 @@ function CreatePosting() {
                   <Plus className="h-4 w-4" /> 오디션 단계 추가
                 </button>
               </fieldset>
-              <Field
-                id="rehearsal-period"
-                label="연습 기간"
-                value={rehearsalPeriod}
-                onChange={setRehearsalPeriod}
-                placeholder="2026.08.03 – 2026.09.10"
-              />
-              <Field
-                id="show-period"
-                label="공연 기간"
-                value={showPeriod}
-                onChange={setShowPeriod}
-                placeholder="2026.09.12 – 2026.10.04"
-              />
               <label
                 className="grid gap-1.5 text-sm font-medium md:col-span-2"
                 htmlFor="show-description"
@@ -1133,8 +1211,8 @@ function CreatePosting() {
             <h2 className="mt-3 text-xl font-semibold">{title || "공연명"}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{producer || "제작사"}</p>
             <dl className="mt-5 grid gap-3 text-sm">
-              <PreviewRow label="지원 마감" value={deadline || "미정"} />
-              <PreviewRow label="오디션" value={auditionDate || "미정"} />
+              <PreviewRow label="지원 마감" value={formatPostingDateTime(deadline) || "미정"} />
+              <PreviewRow label="오디션" value={formattedAuditionDate || "미정"} />
               <PreviewRow label="공연 장소" value={venue || "미정"} />
             </dl>
             <div className="mt-6">
@@ -1245,6 +1323,184 @@ function Field({
       />
     </label>
   );
+}
+
+function ScheduleInput({
+  id,
+  label,
+  type,
+  value,
+  onChange,
+  min,
+  required,
+  invalid,
+  hint,
+  className = "",
+}: {
+  id: string;
+  label: string;
+  type: "date" | "datetime-local";
+  value: string;
+  onChange: (value: string) => void;
+  min?: string;
+  required?: boolean;
+  invalid?: boolean;
+  hint?: string;
+  className?: string;
+}) {
+  return (
+    <label className={`grid content-start gap-1.5 text-sm font-medium ${className}`} htmlFor={id}>
+      <span>
+        {label}
+        {required && <span className="ml-1 text-destructive">*</span>}
+      </span>
+      <input
+        id={id}
+        name={id}
+        type={type}
+        value={value}
+        min={min}
+        required={required}
+        aria-invalid={invalid || undefined}
+        onChange={(event) => onChange(event.target.value)}
+        className={`min-h-11 rounded-xl border bg-background px-3 ${
+          invalid ? "border-destructive ring-1 ring-destructive/20" : "border-input"
+        }`}
+      />
+      {hint && <span className="text-xs font-normal text-muted-foreground">{hint}</span>}
+    </label>
+  );
+}
+
+function ScheduleRangeInput({
+  id,
+  label,
+  start,
+  end,
+  onStartChange,
+  onEndChange,
+  startMin,
+  invalidStart,
+  invalidEnd,
+  className = "",
+}: {
+  id: string;
+  label: string;
+  start: string;
+  end: string;
+  onStartChange: (value: string) => void;
+  onEndChange: (value: string) => void;
+  startMin?: string;
+  invalidStart?: boolean;
+  invalidEnd?: boolean;
+  className?: string;
+}) {
+  return (
+    <fieldset className={`grid content-start gap-1.5 ${className}`}>
+      <legend className="text-sm font-medium">{label}</legend>
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2">
+        <label className="grid gap-1" htmlFor={`${id}-start`}>
+          <span className="sr-only">{label} 시작일</span>
+          <input
+            id={`${id}-start`}
+            name={`${id}-start`}
+            type="date"
+            value={start}
+            min={startMin}
+            aria-label={`${label} 시작일`}
+            aria-invalid={invalidStart || undefined}
+            onChange={(event) => onStartChange(event.target.value)}
+            className={`min-h-11 min-w-0 rounded-xl border bg-background px-3 ${
+              invalidStart ? "border-destructive ring-1 ring-destructive/20" : "border-input"
+            }`}
+          />
+        </label>
+        <span className="text-sm text-muted-foreground" aria-hidden="true">
+          –
+        </span>
+        <label className="grid gap-1" htmlFor={`${id}-end`}>
+          <span className="sr-only">{label} 종료일</span>
+          <input
+            id={`${id}-end`}
+            name={`${id}-end`}
+            type="date"
+            value={end}
+            min={start || startMin}
+            aria-label={`${label} 종료일`}
+            aria-invalid={invalidEnd || undefined}
+            onChange={(event) => onEndChange(event.target.value)}
+            className={`min-h-11 min-w-0 rounded-xl border bg-background px-3 ${
+              invalidEnd ? "border-destructive ring-1 ring-destructive/20" : "border-input"
+            }`}
+          />
+        </label>
+      </div>
+      <span className="text-xs font-normal text-muted-foreground">
+        하루 일정이면 시작일만 선택해도 됩니다.
+      </span>
+    </fieldset>
+  );
+}
+
+function ScheduleValidationStatus({
+  issues,
+  hasScheduleInput,
+  complete,
+}: {
+  issues: string[];
+  hasScheduleInput: boolean;
+  complete: boolean;
+}) {
+  if (issues.length > 0) {
+    return (
+      <div
+        role="alert"
+        aria-live="polite"
+        className="mt-4 flex items-start gap-2 rounded-xl border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive"
+      >
+        <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+        <div>
+          <div className="font-semibold">일정 순서를 다시 확인해 주세요.</div>
+          <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-5">
+            {issues.map((issue) => (
+              <li key={issue}>{issue}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  if (complete) {
+    return (
+      <div
+        role="status"
+        aria-live="polite"
+        className="mt-4 flex items-center gap-2 rounded-xl border border-success/25 bg-success/5 p-3 text-sm font-medium text-success"
+      >
+        <CheckCircle2 className="h-4 w-4 shrink-0" />
+        일정 순서가 올바릅니다.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 flex items-center gap-2 rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+      <CalendarClock className="h-4 w-4 shrink-0" />
+      {hasScheduleInput
+        ? "지원 마감과 결과 발표를 입력하면 일정 검증이 완료됩니다."
+        : "날짜를 선택하면 일정 순서를 자동으로 확인합니다."}
+    </div>
+  );
+}
+
+function dateOnly(value: string) {
+  return value ? value.split("T")[0] : undefined;
+}
+
+function dateTimeStart(value: string) {
+  if (!value) return undefined;
+  return value.includes("T") ? value : `${value}T00:00`;
 }
 
 function FormSection({

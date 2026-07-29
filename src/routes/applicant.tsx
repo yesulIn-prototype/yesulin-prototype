@@ -2,6 +2,7 @@ import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-rout
 import { Home, Search, FileStack, User, FolderOpen, ChevronLeft, LogOut } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { BrandMark } from "@/components/brand-mark";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { AuthGuard } from "@/components/auth-guard";
 
 export const Route = createFileRoute("/applicant")({
@@ -30,7 +31,7 @@ function ApplicantLayout() {
               <Link to="/" className="flex items-center gap-2">
                 <BrandMark size="sm" />
                 <div className="flex flex-col leading-none">
-                  <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
+                  <BrandWordmark size="sm" />
                   <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
                     Applicant
                   </span>
@@ -46,7 +47,7 @@ function ApplicantLayout() {
                 {applicant.name.charAt(0)}
               </div>
               <Link
-                to="/"
+                to="/login"
                 onClick={logout}
                 aria-label="로그아웃"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"

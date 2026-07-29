@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { LayoutDashboard, Film, Megaphone, Users, PlusCircle, LogOut } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { BrandWordmark } from "@/components/brand-wordmark";
 import { AuthGuard } from "@/components/auth-guard";
 import { getAuthAccount, useStore } from "@/lib/store";
 
@@ -29,7 +30,7 @@ function ProducerLayout() {
           <Link to="/" className="flex items-center gap-2.5 border-b border-border px-6 py-5">
             <BrandMark size="sm" />
             <div className="flex flex-col leading-none">
-              <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
+              <BrandWordmark size="sm" />
               <span className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
                 Producer Console
               </span>
@@ -76,7 +77,7 @@ function ProducerLayout() {
                 <div className="text-muted-foreground">캐스팅 담당</div>
               </div>
               <Link
-                to="/"
+                to="/login"
                 onClick={logout}
                 aria-label="로그아웃"
                 className="ml-auto inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
@@ -91,12 +92,19 @@ function ProducerLayout() {
           <header className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-border/70 bg-background/90 px-4 py-3 backdrop-blur lg:hidden">
             <Link to="/" className="flex items-center gap-2">
               <BrandMark size="sm" />
-              <span className="text-sm font-bold">예술IN</span>
+              <BrandWordmark size="sm" />
             </Link>
             <div className="flex items-center gap-2">
+              {account?.logo && (
+                <img
+                  src={account.logo}
+                  alt=""
+                  className="h-8 w-8 rounded-full border border-border bg-white object-contain"
+                />
+              )}
               <span className="max-w-36 truncate text-xs font-semibold">{account?.name}</span>
               <Link
-                to="/"
+                to="/login"
                 onClick={logout}
                 aria-label="로그아웃"
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border"
