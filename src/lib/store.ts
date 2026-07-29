@@ -5,6 +5,8 @@ export type ReviewStatus = "미확인" | "검토 중" | "오디션 대상" | "�
 export type ApplyStatus = "작성 중" | "지원 완료" | "서류 확인" | "오디션 예정" | "합격" | "불합격";
 export type ScheduleKind = "지원 마감" | "오디션" | "연습" | "공연";
 export type PublicationStatus = "임시 저장" | "게시됨";
+export type StageResult = "검토 대기" | "진행 중" | "합격" | "불합격" | "보류" | "불참";
+export type AuditionStageType = "서류" | "오디션" | "최종";
 
 export type Career = {
   id: string;
@@ -91,6 +93,24 @@ export type AdditionalQuestion = {
   options?: string[];
 };
 
+export type AuditionStage = {
+  id: string;
+  name: string;
+  order: number;
+  type: AuditionStageType;
+  date?: string;
+  venue?: string;
+  resultAnnouncementDate?: string;
+};
+
+export type StageHistoryEntry = {
+  id: string;
+  stageId: string;
+  stageName: string;
+  result: StageResult;
+  changedAt: string;
+};
+
 export type Show = {
   id: string;
   performanceId?: string;
@@ -122,6 +142,7 @@ export type Show = {
   bumpedAt?: string;
   resultAnnouncementDate?: string;
   resultsSentAt?: string;
+  auditionStages?: AuditionStage[];
 };
 
 export type Application = {
@@ -143,6 +164,9 @@ export type Application = {
   shortlisted?: boolean;
   rating?: number;
   resultNotifiedAt?: string;
+  currentStageId?: string;
+  stageResult?: StageResult;
+  stageHistory?: StageHistoryEntry[];
 };
 
 // -------- mock data --------
@@ -997,11 +1021,20 @@ type Store = {
   removeShow: (id: string) => void;
   bumpShow: (id: string) => void;
   sendShowResults: (showId: string) => void;
+  updateStageProgress: (appIds: string[], stageId: string, result: StageResult) => void;
 
   submitApplication: (
     app: Omit<
       Application,
-      "id" | "submittedAt" | "applyStatus" | "reviewStatus" | "applicantId" | "applicantName"
+      | "id"
+      | "submittedAt"
+      | "applyStatus"
+      | "reviewStatus"
+      | "applicantId"
+      | "applicantName"
+      | "currentStageId"
+      | "stageResult"
+      | "stageHistory"
     >,
   ) => string;
   updateReview: (appId: string, patch: Partial<Pick<Application, "reviewStatus" | "memo">>) => void;
@@ -1080,6 +1113,84 @@ export function applyStatusForReview(status: ReviewStatus): ApplyStatus {
   if (status === "검토 중" || status === "보류") return "서류 확인";
   if (status === "오디션 대상") return "오디션 예정";
   return status;
+}
+
+export function getAuditionStages(show: Show): AuditionStage[] {
+  if (show.auditionStages?.length) {
+    return [...show.auditionStages].sort((a, b) => a.order - b.order);
+  }
+
+  return [
+    {
+      id: "document",
+      name: "서류 심사",
+      order: 1,
+      type: "서류",
+    },
+    {
+      id: "audition-1",
+      name: "1차 오디션",
+      order: 2,
+      type: "오디션",
+      date: show.auditionDate,
+      venue: show.venue,
+    },
+    {
+      id: "audition-2",
+      name: "2차 오디션",
+      order: 3,
+      type: "오디션",
+      venue: show.venue,
+    },
+    {
+      id: "final",
+      name: "최종 결과",
+      order: 4,
+      type: "최종",
+      resultAnnouncementDate: show.resultAnnouncementDate,
+    },
+  ];
+}
+
+export function getApplicationStageProgress(application: Application, show: Show) {
+  const stages = getAuditionStages(show);
+  const savedStage = stages.find((stage) => stage.id === application.currentStageId);
+  if (savedStage && application.stageResult) {
+    return { stage: savedStage, result: application.stageResult };
+  }
+
+  if (application.reviewStatus === "합격" || application.reviewStatus === "불합격") {
+    return {
+      stage: stages.at(-1) ?? stages[0],
+      result: application.reviewStatus as StageResult,
+    };
+  }
+  if (application.reviewStatus === "오디션 대상") {
+    return {
+      stage: stages.find((stage) => stage.type === "오디션") ?? stages[0],
+      result: "진행 중" as StageResult,
+    };
+  }
+  if (application.reviewStatus === "보류") {
+    return { stage: stages[0], result: "보류" as StageResult };
+  }
+  if (application.reviewStatus === "검토 중") {
+    return { stage: stages[0], result: "진행 중" as StageResult };
+  }
+  return { stage: stages[0], result: "검토 대기" as StageResult };
+}
+
+function reviewStatusForStage(
+  stage: AuditionStage,
+  result: StageResult,
+  stages: AuditionStage[],
+): ReviewStatus {
+  if (result === "불합격" || result === "불참") return "불합격";
+  if (result === "보류") return "보류";
+  if (stage.type === "최종" && result === "합격") return "합격";
+  if (stage.type === "서류") return result === "검토 대기" ? "미확인" : "검토 중";
+  if (stage.id === stages.at(-1)?.id && result === "검토 대기") return "검토 중";
+  return "오디션 대상";
 }
 
 export const useStore = create<Store>()(
@@ -1181,10 +1292,16 @@ export const useStore = create<Store>()(
 
       saveShow: (show) => {
         const id = show.id ?? newId("show");
-        const saved: Show = {
+        const savedBase: Show = {
           ...show,
           id,
           updatedAt: new Date().toISOString(),
+        };
+        const saved: Show = {
+          ...savedBase,
+          auditionStages: show.auditionStages?.length
+            ? show.auditionStages
+            : getAuditionStages(savedBase),
         };
         set((state) => ({
           shows: state.shows.some((item) => item.id === id)
@@ -1231,8 +1348,54 @@ export const useStore = create<Store>()(
           };
         }),
 
+      updateStageProgress: (appIds, stageId, result) =>
+        set((state) => {
+          const changedAt = new Date().toISOString();
+          return {
+            applications: state.applications.map((application) => {
+              if (!appIds.includes(application.id)) return application;
+              const show = state.shows.find((item) => item.id === application.showId);
+              if (!show) return application;
+              const stages = getAuditionStages(show);
+              const stage = stages.find((item) => item.id === stageId);
+              if (!stage) return application;
+
+              const previous = getApplicationStageProgress(application, show);
+              if (previous.stage.id === stage.id && previous.result === result) return application;
+
+              const reviewStatus = reviewStatusForStage(stage, result, stages);
+              const historyEntry: StageHistoryEntry = {
+                id: newId("stage-history"),
+                stageId: stage.id,
+                stageName: stage.name,
+                result,
+                changedAt,
+              };
+
+              return {
+                ...application,
+                currentStageId: stage.id,
+                stageResult: result,
+                stageHistory: [...(application.stageHistory ?? []), historyEntry],
+                reviewStatus,
+                applyStatus:
+                  stage.type === "서류"
+                    ? result === "검토 대기"
+                      ? "지원 완료"
+                      : "서류 확인"
+                    : application.resultNotifiedAt &&
+                        (reviewStatus === "합격" || reviewStatus === "불합격")
+                      ? reviewStatus
+                      : "오디션 예정",
+              };
+            }),
+          };
+        }),
+
       submitApplication: (application) => {
         const id = newId("application");
+        const targetShow = get().shows.find((show) => show.id === application.showId);
+        const firstStageId = targetShow ? getAuditionStages(targetShow)[0]?.id : "document";
         const submittedAt = new Intl.DateTimeFormat("ko-KR", {
           year: "numeric",
           month: "2-digit",
@@ -1253,6 +1416,9 @@ export const useStore = create<Store>()(
           applicantName: get().applicant.name,
           shortlisted: false,
           rating: 0,
+          currentStageId: firstStageId ?? "document",
+          stageResult: "검토 대기",
+          stageHistory: [],
         };
         set((state) => ({ applications: [full, ...state.applications] }));
         return id;
@@ -1355,7 +1521,7 @@ export const useStore = create<Store>()(
         const savedApplicant = saved.applicant;
         const mergedShows = (saved.shows ?? currentState.shows).map((show) => {
           const bundledShow = currentState.shows.find((item) => item.id === show.id);
-          return {
+          const mergedShow: Show = {
             ...bundledShow,
             ...show,
             producer: show.producer === "라이트스테이지" ? "컴퍼니연결" : show.producer,
@@ -1366,16 +1532,29 @@ export const useStore = create<Store>()(
             resultAnnouncementDate:
               show.resultAnnouncementDate ?? bundledShow?.resultAnnouncementDate,
           };
+          return {
+            ...mergedShow,
+            auditionStages:
+              show.auditionStages ?? bundledShow?.auditionStages ?? getAuditionStages(mergedShow),
+          };
         });
         const mergedApplications = (saved.applications ?? currentState.applications).map(
-          (application) => ({
-            ...application,
-            applyStatus:
-              (application.reviewStatus === "합격" || application.reviewStatus === "불합격") &&
-              !application.resultNotifiedAt
-                ? "오디션 예정"
-                : application.applyStatus,
-          }),
+          (application) => {
+            const show = mergedShows.find((item) => item.id === application.showId);
+            if (!show) return application;
+            const progress = getApplicationStageProgress(application, show);
+            return {
+              ...application,
+              currentStageId: progress.stage.id,
+              stageResult: progress.result,
+              stageHistory: application.stageHistory ?? [],
+              applyStatus:
+                (application.reviewStatus === "합격" || application.reviewStatus === "불합격") &&
+                !application.resultNotifiedAt
+                  ? "오디션 예정"
+                  : application.applyStatus,
+            };
+          },
         );
         const photos = (savedApplicant?.photos ?? currentState.applicant.photos).map((photo) => {
           const bundledPhoto = currentState.applicant.photos.find((item) => item.id === photo.id);

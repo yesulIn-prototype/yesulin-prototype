@@ -1,4 +1,4 @@
-import type { ApplyStatus, ReviewStatus } from "@/lib/store";
+import type { ApplyStatus, ReviewStatus, StageResult } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type BadgeStyle = { chip: string; dot: string };
@@ -36,6 +36,27 @@ const reviewMap: Record<ReviewStatus, BadgeStyle> = {
   },
 };
 
+const stageResultMap: Record<StageResult, BadgeStyle> = {
+  "검토 대기": {
+    chip: "bg-warning/15 text-warning-foreground border-warning/35",
+    dot: "bg-warning",
+  },
+  "진행 중": {
+    chip: "bg-information/10 text-information-foreground border-information/30",
+    dot: "bg-information",
+  },
+  합격: { chip: "bg-success/12 text-success border-success/30", dot: "bg-success" },
+  불합격: {
+    chip: "bg-destructive/10 text-destructive border-destructive/25",
+    dot: "bg-destructive",
+  },
+  보류: { chip: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground/60" },
+  불참: {
+    chip: "bg-secondary text-secondary-foreground border-border",
+    dot: "bg-muted-foreground",
+  },
+};
+
 function BadgeShell({
   style,
   label,
@@ -65,6 +86,16 @@ export function ApplyBadge({ status, className }: { status: ApplyStatus; classNa
 
 export function ReviewBadge({ status, className }: { status: ReviewStatus; className?: string }) {
   return <BadgeShell style={reviewMap[status]} label={status} className={className} />;
+}
+
+export function StageResultBadge({
+  status,
+  className,
+}: {
+  status: StageResult;
+  className?: string;
+}) {
+  return <BadgeShell style={stageResultMap[status]} label={status} className={className} />;
 }
 
 export function DeadlineBadge({ daysLeft }: { daysLeft: number }) {

@@ -85,7 +85,7 @@ function ProducerHome() {
                         src={photo.image}
                         alt={`${application.applicantName} 지원자 프로필`}
                         loading="lazy"
-                        className="h-full w-full object-cover object-top transition duration-500 group-hover:scale-[1.02]"
+                        className="h-full w-full object-contain"
                       />
                     ) : (
                       <span className="flex h-full items-center justify-center text-4xl font-semibold text-muted-foreground/40">

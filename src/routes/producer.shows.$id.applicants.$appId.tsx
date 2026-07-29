@@ -1,9 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useStore, type ReviewStatus } from "@/lib/store";
+import {
+  getApplicationStageProgress,
+  getAuditionStages,
+  useStore,
+  type StageResult,
+} from "@/lib/store";
 import { trackAnalyticsEvent } from "@/lib/analytics";
 import { PhotoTile, VideoTile } from "@/components/poster";
-import { ReviewBadge } from "@/components/status-badge";
+import { StageResultBadge } from "@/components/status-badge";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import {
   Check,
   ChevronLeft,
@@ -14,20 +20,15 @@ import {
   Save,
   User,
   Calendar,
+  Maximize2,
+  CircleCheck,
 } from "lucide-react";
 
 export const Route = createFileRoute("/producer/shows/$id/applicants/$appId")({
   component: ApplicantDetail,
 });
 
-const REVIEW_STATUSES: ReviewStatus[] = [
-  "미확인",
-  "검토 중",
-  "오디션 대상",
-  "보류",
-  "합격",
-  "불합격",
-];
+const STAGE_RESULTS: StageResult[] = ["검토 대기", "진행 중", "합격", "불합격", "보류", "불참"];
 
 function ApplicantDetail() {
   const { id, appId } = Route.useParams();
@@ -35,9 +36,12 @@ function ApplicantDetail() {
   const app = useStore((s) => s.applications.find((a) => a.id === appId));
   const getApplicantById = useStore((s) => s.getApplicantById);
   const updateReview = useStore((s) => s.updateReview);
-  const [pendingStatus, setPendingStatus] = useState<ReviewStatus | null>(null);
+  const updateStageProgress = useStore((s) => s.updateStageProgress);
+  const [pendingStageId, setPendingStageId] = useState<string | null>(null);
+  const [pendingStageResult, setPendingStageResult] = useState<StageResult | null>(null);
   const [memoDraft, setMemoDraft] = useState(app?.memo ?? "");
   const [feedback, setFeedback] = useState("");
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
   const trackedApplicantKey = useRef<string | null>(null);
 
   useEffect(() => {
@@ -57,37 +61,45 @@ function ApplicantDetail() {
 
   const showId = show.id;
   const applicationId = app.id;
-  const currentReviewStatus = app.reviewStatus;
+  const stages = getAuditionStages(show);
+  const savedProgress = getApplicationStageProgress(app, show);
   const roleName = app.roleIds.map((r) => show.roles.find((sr) => sr.id === r)?.name).join(", ");
   const careers = applicant.careers.filter((c) => app.selectedCareerIds.includes(c.id));
   const photos = applicant.photos.filter((p) => app.selectedPhotoIds.includes(p.id));
+  const selectedPhoto = photos.find((photo) => photo.id === selectedPhotoId);
   const profilePhoto =
     photos.find((photo) => photo.image) ?? applicant.photos.find((photo) => photo.image);
   const videos = applicant.videos.filter((v) => app.selectedVideoIds.includes(v.id));
-  const currentStatus = pendingStatus ?? app.reviewStatus;
-  const statusDirty = pendingStatus !== null && pendingStatus !== app.reviewStatus;
+  const currentStageId = pendingStageId ?? savedProgress.stage.id;
+  const currentStageResult = pendingStageResult ?? savedProgress.result;
+  const stageDirty =
+    currentStageId !== savedProgress.stage.id || currentStageResult !== savedProgress.result;
   const memoDirty = memoDraft !== app.memo;
 
-  function saveStatus() {
-    if (!pendingStatus || !statusDirty) return;
+  function saveStageProgress() {
+    if (!stageDirty) return;
     if (
-      (pendingStatus === "합격" || pendingStatus === "불합격") &&
-      !window.confirm(`검토 상태를 '${pendingStatus}'으로 변경하시겠습니까?`)
+      (currentStageResult === "합격" || currentStageResult === "불합격") &&
+      !window.confirm(
+        `${stages.find((stage) => stage.id === currentStageId)?.name ?? "전형 단계"} 결과를 '${currentStageResult}'으로 저장하시겠습니까?`,
+      )
     ) {
       return;
     }
-    updateReview(applicationId, { reviewStatus: pendingStatus });
+    updateStageProgress([applicationId], currentStageId, currentStageResult);
     trackAnalyticsEvent("review_status_changed", {
       show_id: showId,
-      previous_status: currentReviewStatus,
-      review_status: pendingStatus,
+      previous_status: `${savedProgress.stage.name}:${savedProgress.result}`,
+      review_status: `${stages.find((stage) => stage.id === currentStageId)?.name}:${currentStageResult}`,
     });
     const changedAt = new Date().toLocaleTimeString("ko-KR", {
       hour: "numeric",
       minute: "2-digit",
     });
-    setFeedback(`${pendingStatus}(으)로 변경했습니다 · ${changedAt} · 캐스팅 담당`);
-    setPendingStatus(null);
+    const stageName = stages.find((stage) => stage.id === currentStageId)?.name ?? "전형 단계";
+    setFeedback(`${stageName} · ${currentStageResult}(으)로 변경했습니다 · ${changedAt}`);
+    setPendingStageId(null);
+    setPendingStageResult(null);
   }
 
   function saveMemo() {
@@ -123,7 +135,10 @@ function ApplicantDetail() {
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-2xl font-semibold">{applicant.name}</h1>
                 <span className="text-sm text-muted-foreground">({applicant.stageName})</span>
-                <ReviewBadge status={app.reviewStatus} />
+                <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold">
+                  {savedProgress.stage.name}
+                </span>
+                <StageResultBadge status={savedProgress.result} />
               </div>
               <div className="mt-1 text-sm text-muted-foreground">
                 지원 배역: <strong className="text-foreground">{roleName}</strong> · 지원일{" "}
@@ -153,6 +168,70 @@ function ApplicantDetail() {
               <Field icon={Calendar} label="생년월일" value={applicant.birthDate} />
               <Field icon={Phone} label="연락처" value={applicant.phone} />
               <Field icon={Mail} label="이메일" value={applicant.email} />
+            </div>
+          </Section>
+
+          <Section title="전형 진행">
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {stages.map((stage, index) => {
+                const currentIndex = stages.findIndex((item) => item.id === savedProgress.stage.id);
+                const completed = index < currentIndex;
+                const current = stage.id === savedProgress.stage.id;
+                return (
+                  <div
+                    key={stage.id}
+                    className={`rounded-xl border p-3 ${
+                      current
+                        ? "border-primary bg-primary/5"
+                        : completed
+                          ? "border-success/30 bg-success/5"
+                          : "border-border bg-surface"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                        Stage {index + 1}
+                      </span>
+                      {completed && <CircleCheck className="h-4 w-4 text-success" />}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold">{stage.name}</div>
+                    <div className="mt-2 text-[11px] text-muted-foreground">
+                      {current
+                        ? savedProgress.result
+                        : completed
+                          ? "이전 단계"
+                          : (stage.date ?? stage.resultAnnouncementDate ?? "예정")}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="text-xs font-semibold text-muted-foreground">단계 변경 이력</div>
+              <div className="mt-2 space-y-2">
+                {(app.stageHistory ?? []).length > 0 ? (
+                  [...(app.stageHistory ?? [])]
+                    .reverse()
+                    .slice(0, 5)
+                    .map((history) => (
+                      <div
+                        key={history.id}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-surface px-3 py-2 text-xs"
+                      >
+                        <span className="font-medium">
+                          {history.stageName} · {history.result}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {new Date(history.changedAt).toLocaleString("ko-KR")}
+                        </span>
+                      </div>
+                    ))
+                ) : (
+                  <div className="rounded-lg bg-surface px-3 py-2 text-xs text-muted-foreground">
+                    현재 {savedProgress.stage.name} · {savedProgress.result}
+                  </div>
+                )}
+              </div>
             </div>
           </Section>
 
@@ -194,7 +273,25 @@ function ApplicantDetail() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {photos.map((p) => (
                 <div key={p.id}>
-                  <PhotoTile color={p.color} label={p.type} image={p.image} />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPhotoId(p.id)}
+                    disabled={!p.image}
+                    aria-label={`${p.fileName} 크게 보기`}
+                    className="group relative block w-full cursor-zoom-in rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-default"
+                  >
+                    <PhotoTile
+                      color={p.color}
+                      label={p.type}
+                      image={p.image}
+                      className="w-full transition-opacity group-hover:opacity-90"
+                    />
+                    {p.image && (
+                      <span className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white shadow-sm">
+                        <Maximize2 className="h-4 w-4" />
+                      </span>
+                    )}
+                  </button>
                   <div className="mt-1 truncate text-[11px] font-medium">{p.fileName}</div>
                   <div className="text-[10px] text-muted-foreground">{p.type}</div>
                 </div>
@@ -247,37 +344,49 @@ function ApplicantDetail() {
         <aside className="lg:sticky lg:top-24 lg:self-start">
           <div className="rounded-2xl border border-border bg-card p-5">
             <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              검토 상태 변경
+              전형 단계·결과 변경
             </div>
-            <div className="mt-3 space-y-1.5">
-              {REVIEW_STATUSES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setPendingStatus(s)}
-                  aria-pressed={currentStatus === s}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-sm transition-colors ${
-                    currentStatus === s
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-secondary-foreground hover:bg-accent"
-                  }`}
-                >
-                  {s}
-                  {currentStatus === s && <span className="text-xs">선택됨</span>}
-                </button>
-              ))}
+            <div className="mt-3 space-y-3">
+              <label className="block text-xs font-medium" htmlFor="applicant-stage">
+                현재 전형 단계
+              </label>
+              <select
+                id="applicant-stage"
+                value={currentStageId}
+                onChange={(event) => setPendingStageId(event.target.value)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.name}
+                  </option>
+                ))}
+              </select>
+              <label className="block text-xs font-medium" htmlFor="applicant-stage-result">
+                단계 결과
+              </label>
+              <select
+                id="applicant-stage-result"
+                value={currentStageResult}
+                onChange={(event) => setPendingStageResult(event.target.value as StageResult)}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                {STAGE_RESULTS.map((result) => (
+                  <option key={result}>{result}</option>
+                ))}
+              </select>
             </div>
             <button
               type="button"
-              onClick={saveStatus}
-              disabled={!statusDirty}
+              onClick={saveStageProgress}
+              disabled={!stageDirty}
               className="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-35"
             >
-              <Save className="h-4 w-4" /> 검토 상태 저장
+              <Save className="h-4 w-4" /> 단계·결과 저장
             </button>
-            {statusDirty && (
+            {stageDirty && (
               <p className="mt-2 text-xs text-warning-foreground">
-                저장하기 전까지 상태가 확정되지 않습니다.
+                저장하기 전까지 단계와 결과가 확정되지 않습니다.
               </p>
             )}
 
@@ -317,7 +426,9 @@ function ApplicantDetail() {
               <div className="mt-3 flex gap-2 text-xs">
                 <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div>
-                  <div className="font-medium">{app.reviewStatus}</div>
+                  <div className="font-medium">
+                    {savedProgress.stage.name} · {savedProgress.result}
+                  </div>
                   <div className="mt-0.5 text-muted-foreground">현재 저장된 상태 · 캐스팅 담당</div>
                 </div>
               </div>
@@ -325,6 +436,34 @@ function ApplicantDetail() {
           </div>
         </aside>
       </div>
+
+      <Dialog
+        open={Boolean(selectedPhoto?.image)}
+        onOpenChange={(open) => {
+          if (!open) setSelectedPhotoId(null);
+        }}
+      >
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-5xl gap-0 overflow-hidden border-white/10 bg-black p-0 text-white">
+          {selectedPhoto?.image && (
+            <>
+              <div className="flex max-h-[78vh] min-h-0 items-center justify-center bg-black">
+                <img
+                  src={selectedPhoto.image}
+                  alt={`${applicant.name} ${selectedPhoto.type}`}
+                  className="max-h-[78vh] max-w-full object-contain"
+                />
+              </div>
+              <div className="border-t border-white/10 bg-black px-5 py-4 pr-14">
+                <DialogTitle className="text-base text-white">{selectedPhoto.fileName}</DialogTitle>
+                <DialogDescription className="mt-1 text-white/65">
+                  {selectedPhoto.type} · 사진 바깥 영역이나 닫기 버튼을 누르면 이전 화면으로
+                  돌아갑니다.
+                </DialogDescription>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

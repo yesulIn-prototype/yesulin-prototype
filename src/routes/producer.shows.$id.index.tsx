@@ -3,13 +3,15 @@ import { useMemo, useState } from "react";
 import {
   useStore,
   daysUntil,
+  getApplicationStageProgress,
+  getAuditionStages,
   getPostingTitle,
-  isFinalReviewStatus,
   type Applicant,
   type Application,
-  type ReviewStatus,
+  type AuditionStage,
+  type StageResult,
 } from "@/lib/store";
-import { ReviewBadge } from "@/components/status-badge";
+import { StageResultBadge } from "@/components/status-badge";
 import {
   AlertCircle,
   BellRing,
@@ -45,19 +47,15 @@ export const Route = createFileRoute("/producer/shows/$id/")({
   component: ShowApplicants,
 });
 
-const REVIEW_STATUSES: ReviewStatus[] = [
-  "미확인",
-  "검토 중",
-  "오디션 대상",
-  "보류",
-  "합격",
-  "불합격",
-];
+const STAGE_RESULTS: StageResult[] = ["검토 대기", "진행 중", "합격", "불합격", "보류", "불참"];
 type SortKey = "recent" | "name" | "career";
+type PendingProgress = { stageId: string; result: StageResult };
 
 type RowModel = {
   app: Application;
   applicant: Applicant | undefined;
+  stage: AuditionStage;
+  stageResult: StageResult;
   roleNames: string;
   age: number | null;
   height: number | null;
@@ -71,40 +69,50 @@ function ShowApplicants() {
   const allApplications = useStore((s) => s.applications);
   const removeShow = useStore((s) => s.removeShow);
   const sendShowResults = useStore((s) => s.sendShowResults);
-  const updateReview = useStore((s) => s.updateReview);
-  const updateReviews = useStore((s) => s.updateReviews);
+  const updateStageProgress = useStore((s) => s.updateStageProgress);
   const toggleShortlist = useStore((s) => s.toggleShortlist);
   const setRating = useStore((s) => s.setRating);
   const getApplicantById = useStore((s) => s.getApplicantById);
 
   const [roleFilter, setRoleFilter] = useState("전체");
-  const [statusFilter, setStatusFilter] = useState("전체");
+  const [stageFilter, setStageFilter] = useState("전체");
+  const [stageResultFilter, setStageResultFilter] = useState("전체");
   const [genderFilter, setGenderFilter] = useState("전체");
   const [nameQuery, setNameQuery] = useState("");
   const [minAge, setMinAge] = useState("");
   const [maxAge, setMaxAge] = useState("");
   const [minHeight, setMinHeight] = useState("");
   const [sort, setSort] = useState<SortKey>("recent");
-  const [pending, setPending] = useState<Record<string, ReviewStatus>>({});
+  const [pending, setPending] = useState<Record<string, PendingProgress>>({});
   const [statusNotice, setStatusNotice] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [bulkStatus, setBulkStatus] = useState<ReviewStatus>("검토 중");
+  const [bulkStageId, setBulkStageId] = useState("");
+  const [bulkStageResult, setBulkStageResult] = useState<StageResult>("진행 중");
   const [compareOpen, setCompareOpen] = useState(false);
 
   if (!show) throw notFound();
 
+  const stages = getAuditionStages(show);
+  const finalStageId = stages.at(-1)?.id;
   const applications = allApplications.filter((application) => application.showId === id);
   const deadlineDays = daysUntil(show.deadline);
   const deadlineLabel = deadlineDays >= 0 ? `D-${deadlineDays}` : "마감";
   const announcementDays = show.resultAnnouncementDate
     ? daysUntil(show.resultAnnouncementDate)
     : null;
-  const savedFinalResults = applications.filter((application) =>
-    isFinalReviewStatus(application.reviewStatus),
-  );
-  const unsavedResultCount = Object.entries(pending).filter(([appId, nextStatus]) => {
+  const savedFinalResults = applications.filter((application) => {
+    const progress = getApplicationStageProgress(application, show);
+    return (
+      progress.result === "불합격" ||
+      progress.result === "불참" ||
+      (progress.stage.id === finalStageId && progress.result === "합격")
+    );
+  });
+  const unsavedResultCount = Object.entries(pending).filter(([appId, nextProgress]) => {
     const application = applications.find((item) => item.id === appId);
-    return application && application.reviewStatus !== nextStatus;
+    if (!application) return false;
+    const current = getApplicationStageProgress(application, show);
+    return current.stage.id !== nextProgress.stageId || current.result !== nextProgress.result;
   }).length;
   const hasApplications = applications.length > 0;
   const deadlinePassed = deadlineDays < 0;
@@ -117,11 +125,14 @@ function ShowApplicants() {
     const list = applications
       .map((app) => {
         const applicant = getApplicantById(app.applicantId);
+        const progress = getApplicationStageProgress(app, show);
         const birthYear = Number(applicant?.birthDate.slice(0, 4));
         const height = Number.parseInt(applicant?.height ?? "", 10);
         return {
           app,
           applicant,
+          stage: progress.stage,
+          stageResult: progress.result,
           roleNames: app.roleIds
             .map((roleId) => show.roles.find((role) => role.id === roleId)?.name)
             .filter(Boolean)
@@ -135,7 +146,8 @@ function ShowApplicants() {
       })
       .filter((row) => {
         if (roleFilter !== "전체" && !row.app.roleIds.includes(roleFilter)) return false;
-        if (statusFilter !== "전체" && row.app.reviewStatus !== statusFilter) return false;
+        if (stageFilter !== "전체" && row.stage.id !== stageFilter) return false;
+        if (stageResultFilter !== "전체" && row.stageResult !== stageResultFilter) return false;
         if (genderFilter !== "전체" && row.applicant?.gender !== genderFilter) return false;
         if (nameQuery.trim() && !row.app.applicantName.includes(nameQuery.trim())) return false;
         if (minAge && (row.age === null || row.age < Number(minAge))) return false;
@@ -161,14 +173,16 @@ function ShowApplicants() {
     minHeight,
     nameQuery,
     roleFilter,
-    show.roles,
+    show,
     sort,
-    statusFilter,
+    stageFilter,
+    stageResultFilter,
   ]);
 
   const activeFilterCount = [
     roleFilter !== "전체",
-    statusFilter !== "전체",
+    stageFilter !== "전체",
+    stageResultFilter !== "전체",
     genderFilter !== "전체",
     Boolean(nameQuery),
     Boolean(minAge),
@@ -178,7 +192,8 @@ function ShowApplicants() {
 
   function resetFilters() {
     setRoleFilter("전체");
-    setStatusFilter("전체");
+    setStageFilter("전체");
+    setStageResultFilter("전체");
     setGenderFilter("전체");
     setNameQuery("");
     setMinAge("");
@@ -187,9 +202,9 @@ function ShowApplicants() {
   }
 
   function saveOne(appId: string) {
-    const nextStatus = pending[appId];
-    if (!nextStatus) return;
-    updateReview(appId, { reviewStatus: nextStatus });
+    const nextProgress = pending[appId];
+    if (!nextProgress) return;
+    updateStageProgress([appId], nextProgress.stageId, nextProgress.result);
     setPending((current) => {
       const next = { ...current };
       delete next[appId];
@@ -199,13 +214,20 @@ function ShowApplicants() {
       hour: "numeric",
       minute: "2-digit",
     });
-    setStatusNotice(`${nextStatus}(으)로 변경했습니다 · ${changedAt} · 캐스팅 담당`);
+    const stageName =
+      stages.find((stage) => stage.id === nextProgress.stageId)?.name ?? "전형 단계";
+    setStatusNotice(
+      `${stageName} · ${nextProgress.result}(으)로 변경했습니다 · ${changedAt} · 캐스팅 담당`,
+    );
   }
 
-  function applyBulkStatus() {
+  function applyBulkProgress() {
     if (selected.length === 0) return;
-    updateReviews(selected, { reviewStatus: bulkStatus });
-    setStatusNotice(`${selected.length}건을 ${bulkStatus}(으)로 변경했습니다.`);
+    const stageId = bulkStageId || stages[0]?.id;
+    if (!stageId) return;
+    updateStageProgress(selected, stageId, bulkStageResult);
+    const stageName = stages.find((stage) => stage.id === stageId)?.name ?? "전형 단계";
+    setStatusNotice(`${selected.length}명을 ${stageName} · ${bulkStageResult}(으)로 변경했습니다.`);
     setSelected([]);
   }
 
@@ -243,13 +265,21 @@ function ShowApplicants() {
           <div className="flex flex-wrap gap-2">
             <StatChip label="전체" value={applications.length} />
             <StatChip
-              label="미확인"
-              value={applications.filter((app) => app.reviewStatus === "미확인").length}
+              label="결과 대기"
+              value={
+                applications.filter(
+                  (app) => getApplicationStageProgress(app, show).result === "검토 대기",
+                ).length
+              }
               accent="warning"
             />
             <StatChip
-              label="오디션 대상"
-              value={applications.filter((app) => app.reviewStatus === "오디션 대상").length}
+              label="오디션 진행"
+              value={
+                applications.filter(
+                  (app) => getApplicationStageProgress(app, show).stage.type === "오디션",
+                ).length
+              }
               accent="success"
             />
           </div>
@@ -266,10 +296,10 @@ function ShowApplicants() {
             </AlertDialogTrigger>
             <AlertDialogContent className="max-w-2xl">
               <AlertDialogHeader>
-                <AlertDialogTitle>전체 지원자 결과를 최종 확인하세요</AlertDialogTitle>
+                <AlertDialogTitle>전형 단계별 최종 결정을 확인하세요</AlertDialogTitle>
                 <AlertDialogDescription>
-                  저장된 합격·불합격 결과와 마감 및 발표 일정을 모두 충족해야 알림을 보낼 수
-                  있습니다.
+                  중도 불합격·불참 또는 최종 결과 단계의 합격 결정이 모두 저장되고, 마감 및 발표
+                  일정을 충족해야 알림을 보낼 수 있습니다.
                 </AlertDialogDescription>
               </AlertDialogHeader>
 
@@ -285,7 +315,7 @@ function ShowApplicants() {
                 />
                 <ResultCheck
                   passed={allResultsSaved}
-                  label="전체 합·불 결과 저장"
+                  label="전체 지원자 최종 결정 저장"
                   detail={`저장 완료 ${savedFinalResults.length}/${applications.length}명${
                     unsavedResultCount > 0 ? ` · 미저장 변경 ${unsavedResultCount}건` : ""
                   }`}
@@ -317,9 +347,12 @@ function ShowApplicants() {
                   <div className="p-4 text-sm text-muted-foreground">지원자가 없습니다.</div>
                 ) : (
                   applications.map((application) => {
+                    const currentProgress = getApplicationStageProgress(application, show);
                     const pendingStatus = pending[application.id];
                     const isUnsaved =
-                      pendingStatus !== undefined && pendingStatus !== application.reviewStatus;
+                      pendingStatus !== undefined &&
+                      (pendingStatus.stageId !== currentProgress.stage.id ||
+                        pendingStatus.result !== currentProgress.result);
                     return (
                       <div
                         key={application.id}
@@ -333,10 +366,19 @@ function ShowApplicants() {
                             </div>
                           )}
                         </div>
-                        <ReviewBadge
-                          status={isUnsaved ? pendingStatus : application.reviewStatus}
-                          className="px-3 py-1.5 text-xs"
-                        />
+                        <div className="flex flex-wrap items-center justify-end gap-2">
+                          <span className="text-xs font-semibold">
+                            {stages.find(
+                              (stage) =>
+                                stage.id ===
+                                (isUnsaved ? pendingStatus.stageId : currentProgress.stage.id),
+                            )?.name ?? "전형 단계"}
+                          </span>
+                          <StageResultBadge
+                            status={isUnsaved ? pendingStatus.result : currentProgress.result}
+                            className="px-3 py-1.5 text-xs"
+                          />
+                        </div>
                       </div>
                     );
                   })
@@ -405,28 +447,96 @@ function ShowApplicants() {
         </div>
       )}
 
+      <section className="rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)] md:p-5">
+        <div>
+          <h2 className="font-semibold">전형 진행 현황</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            지원자가 현재 머물러 있는 단계와 단계별 일정을 확인합니다.
+          </p>
+        </div>
+        <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          {stages.map((stage, index) => {
+            const count = applications.filter(
+              (application) => getApplicationStageProgress(application, show).stage.id === stage.id,
+            ).length;
+            return (
+              <button
+                key={stage.id}
+                type="button"
+                onClick={() => setStageFilter(stage.id)}
+                aria-pressed={stageFilter === stage.id}
+                className={`relative rounded-xl border p-3 text-left transition ${
+                  stageFilter === stage.id
+                    ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                    : "border-border bg-surface hover:border-primary/40"
+                }`}
+              >
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                  Stage {index + 1}
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <strong className="text-sm">{stage.name}</strong>
+                  <span className="rounded-full bg-background px-2 py-1 text-xs font-bold">
+                    {count}명
+                  </span>
+                </div>
+                <div className="mt-2 truncate text-[11px] text-muted-foreground">
+                  {stage.date ??
+                    stage.resultAnnouncementDate ??
+                    (stage.type === "서류" ? "지원서 검토" : "일정 추후 안내")}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+        {stageFilter !== "전체" && (
+          <button
+            type="button"
+            onClick={() => setStageFilter("전체")}
+            className="mt-3 text-xs font-semibold text-primary hover:underline"
+          >
+            전체 단계 보기
+          </button>
+        )}
+      </section>
+
       {selected.length > 0 && (
         <div className="sticky top-20 z-20 flex flex-wrap items-center gap-2 rounded-xl border border-primary/30 bg-card p-3 shadow-[var(--shadow-elev-2)]">
           <strong className="mr-auto text-sm">{selected.length}명 선택</strong>
-          <label className="sr-only" htmlFor="bulk-review-status">
-            일괄 검토 상태
+          <label className="sr-only" htmlFor="bulk-stage">
+            일괄 전형 단계
           </label>
           <select
-            id="bulk-review-status"
-            value={bulkStatus}
-            onChange={(event) => setBulkStatus(event.target.value as ReviewStatus)}
+            id="bulk-stage"
+            value={bulkStageId || stages[0]?.id}
+            onChange={(event) => setBulkStageId(event.target.value)}
             className="min-h-10 rounded-lg border border-input bg-background px-3 text-sm"
           >
-            {REVIEW_STATUSES.map((status) => (
-              <option key={status}>{status}</option>
+            {stages.map((stage) => (
+              <option key={stage.id} value={stage.id}>
+                {stage.name}
+              </option>
+            ))}
+          </select>
+          <label className="sr-only" htmlFor="bulk-stage-result">
+            일괄 단계 결과
+          </label>
+          <select
+            id="bulk-stage-result"
+            value={bulkStageResult}
+            onChange={(event) => setBulkStageResult(event.target.value as StageResult)}
+            className="min-h-10 rounded-lg border border-input bg-background px-3 text-sm"
+          >
+            {STAGE_RESULTS.map((result) => (
+              <option key={result}>{result}</option>
             ))}
           </select>
           <button
             type="button"
-            onClick={applyBulkStatus}
+            onClick={applyBulkProgress}
             className="min-h-10 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground"
           >
-            상태 일괄 변경
+            단계·결과 일괄 변경
           </button>
           <button
             type="button"
@@ -447,7 +557,7 @@ function ShowApplicants() {
       )}
 
       <section className="space-y-4 rounded-2xl border border-border bg-card p-4 shadow-[var(--shadow-elev-1)]">
-        <div className="grid gap-3 lg:grid-cols-[minmax(240px,1fr)_repeat(4,auto)]">
+        <div className="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_repeat(5,auto)]">
           <label className="relative">
             <span className="sr-only">지원자 이름 검색</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -468,12 +578,21 @@ function ShowApplicants() {
             ]}
           />
           <FilterSelect
-            label="검토 상태"
-            value={statusFilter}
-            onChange={setStatusFilter}
+            label="전형 단계"
+            value={stageFilter}
+            onChange={setStageFilter}
             options={[
-              { value: "전체", label: "검토 상태 전체" },
-              ...REVIEW_STATUSES.map((status) => ({ value: status, label: status })),
+              { value: "전체", label: "전형 단계 전체" },
+              ...stages.map((stage) => ({ value: stage.id, label: stage.name })),
+            ]}
+          />
+          <FilterSelect
+            label="단계 결과"
+            value={stageResultFilter}
+            onChange={setStageResultFilter}
+            options={[
+              { value: "전체", label: "단계 결과 전체" },
+              ...STAGE_RESULTS.map((result) => ({ value: result, label: result })),
             ]}
           />
           <FilterSelect
@@ -557,9 +676,10 @@ function ShowApplicants() {
               key={row.app.id}
               row={row}
               showId={show.id}
-              pendingStatus={pending[row.app.id]}
-              onPending={(status) =>
-                setPending((current) => ({ ...current, [row.app.id]: status }))
+              stages={stages}
+              pendingProgress={pending[row.app.id]}
+              onPending={(progress) =>
+                setPending((current) => ({ ...current, [row.app.id]: progress }))
               }
               onSave={() => saveOne(row.app.id)}
               selected={selected.includes(row.app.id)}
@@ -590,7 +710,8 @@ function ShowApplicants() {
 function ApplicantCard({
   row,
   showId,
-  pendingStatus,
+  stages,
+  pendingProgress,
   onPending,
   onSave,
   selected,
@@ -600,16 +721,21 @@ function ApplicantCard({
 }: {
   row: RowModel;
   showId: string;
-  pendingStatus?: ReviewStatus;
-  onPending: (status: ReviewStatus) => void;
+  stages: AuditionStage[];
+  pendingProgress?: PendingProgress;
+  onPending: (progress: PendingProgress) => void;
   onSave: () => void;
   selected: boolean;
   onSelect: (checked: boolean) => void;
   onToggleShortlist: () => void;
   onRating: (rating: number) => void;
 }) {
-  const currentStatus = pendingStatus ?? row.app.reviewStatus;
-  const isDirty = Boolean(pendingStatus && pendingStatus !== row.app.reviewStatus);
+  const currentStageId = pendingProgress?.stageId ?? row.stage.id;
+  const currentResult = pendingProgress?.result ?? row.stageResult;
+  const isDirty = Boolean(
+    pendingProgress &&
+    (pendingProgress.stageId !== row.stage.id || pendingProgress.result !== row.stageResult),
+  );
 
   return (
     <article
@@ -634,7 +760,7 @@ function ApplicantCard({
               />
               <h2 className="text-lg font-semibold tracking-tight">{row.app.applicantName}</h2>
             </label>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1.5">
               <button
                 type="button"
                 onClick={onToggleShortlist}
@@ -648,7 +774,10 @@ function ApplicantCard({
                   }`}
                 />
               </button>
-              <ReviewBadge status={row.app.reviewStatus} />
+              <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-semibold">
+                {row.stage.name}
+              </span>
+              <StageResultBadge status={row.stageResult} />
             </div>
           </div>
           <div className="mt-1.5 text-xs text-muted-foreground">
@@ -697,20 +826,39 @@ function ApplicantCard({
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-[1fr_auto_auto]">
-        <label className="sr-only" htmlFor={`mobile-status-${row.app.id}`}>
-          {row.app.applicantName} 검토 상태
+      <div className="grid grid-cols-2 gap-2 p-4">
+        <label className="sr-only" htmlFor={`mobile-stage-${row.app.id}`}>
+          {row.app.applicantName} 전형 단계
         </label>
         <select
-          id={`mobile-status-${row.app.id}`}
-          value={currentStatus}
-          onChange={(event) => onPending(event.target.value as ReviewStatus)}
-          className={`col-span-2 rounded-md border bg-background px-3 py-2 text-sm sm:col-span-1 ${
+          id={`mobile-stage-${row.app.id}`}
+          value={currentStageId}
+          onChange={(event) => onPending({ stageId: event.target.value, result: currentResult })}
+          className={`rounded-md border bg-background px-3 py-2 text-sm ${
             isDirty ? "border-warning" : "border-input"
           }`}
         >
-          {REVIEW_STATUSES.map((status) => (
-            <option key={status}>{status}</option>
+          {stages.map((stage) => (
+            <option key={stage.id} value={stage.id}>
+              {stage.name}
+            </option>
+          ))}
+        </select>
+        <label className="sr-only" htmlFor={`mobile-stage-result-${row.app.id}`}>
+          {row.app.applicantName} 단계 결과
+        </label>
+        <select
+          id={`mobile-stage-result-${row.app.id}`}
+          value={currentResult}
+          onChange={(event) =>
+            onPending({ stageId: currentStageId, result: event.target.value as StageResult })
+          }
+          className={`rounded-md border bg-background px-3 py-2 text-sm ${
+            isDirty ? "border-warning" : "border-input"
+          }`}
+        >
+          {STAGE_RESULTS.map((result) => (
+            <option key={result}>{result}</option>
           ))}
         </select>
         <button
@@ -719,7 +867,7 @@ function ApplicantCard({
           disabled={!isDirty}
           className="inline-flex items-center justify-center gap-1 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground disabled:opacity-35"
         >
-          <Save className="h-3.5 w-3.5" /> 상태 저장
+          <Save className="h-3.5 w-3.5" /> 단계·결과 저장
         </button>
         <Link
           to="/producer/shows/$id/applicants/$appId"
@@ -797,7 +945,8 @@ function CompareDialog({ rows, onClose }: { rows: RowModel[]; onClose: () => voi
                 rows={rows}
                 value={(row) => `${row.app.rating ?? 0} / 5점`}
               />
-              <CompareRow label="상태" rows={rows} value={(row) => row.app.reviewStatus} />
+              <CompareRow label="전형 단계" rows={rows} value={(row) => row.stage.name} />
+              <CompareRow label="단계 결과" rows={rows} value={(row) => row.stageResult} />
             </tbody>
           </table>
         </div>
