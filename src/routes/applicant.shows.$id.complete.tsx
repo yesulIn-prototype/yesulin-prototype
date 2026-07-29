@@ -9,9 +9,9 @@ export const Route = createFileRoute("/applicant/shows/$id/complete")({
 function ApplyComplete() {
   const { id } = Route.useParams();
   const show = findShow(id);
-  // The most recently submitted app by "me" for this show
+  const applicantId = useStore((s) => s.applicant.id);
   const app = useStore((s) =>
-    [...s.applications].reverse().find((a) => a.applicantId === "me" && a.showId === id),
+    [...s.applications].reverse().find((a) => a.applicantId === applicantId && a.showId === id),
   );
 
   if (!show) throw notFound();

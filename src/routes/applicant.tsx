@@ -1,7 +1,8 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Home, Search, FileStack, User, FolderOpen, ChevronLeft } from "lucide-react";
+import { Home, Search, FileStack, User, FolderOpen, ChevronLeft, LogOut } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { BrandMark } from "@/components/brand-mark";
+import { AuthGuard } from "@/components/auth-guard";
 
 export const Route = createFileRoute("/applicant")({
   component: ApplicantLayout,
@@ -17,36 +18,78 @@ const nav = [
 
 function ApplicantLayout() {
   const applicant = useStore((s) => s.applicant);
+  const logout = useStore((s) => s.logout);
   const location = useLocation();
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="flex items-center gap-2">
-              <BrandMark size="sm" />
-              <div className="flex flex-col leading-none">
-                <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
-                <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Applicant
-                </span>
+    <AuthGuard role="applicant">
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-30 border-b border-border/70 bg-background/85 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+            <div className="flex items-center gap-3">
+              <Link to="/" className="flex items-center gap-2">
+                <BrandMark size="sm" />
+                <div className="flex flex-col leading-none">
+                  <span className="text-base font-bold tracking-[-0.04em]">예술IN</span>
+                  <span className="mt-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+                    Applicant
+                  </span>
+                </div>
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="hidden text-right text-xs sm:block">
+                <div className="font-medium leading-tight">{applicant.name}</div>
+                <div className="text-muted-foreground">{applicant.stageName}</div>
               </div>
-            </Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="hidden text-right text-xs sm:block">
-              <div className="font-medium leading-tight">{applicant.name}</div>
-              <div className="text-muted-foreground">{applicant.stageName}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-1 ring-primary/15">
+                {applicant.name.charAt(0)}
+              </div>
+              <Link
+                to="/"
+                onClick={logout}
+                aria-label="로그아웃"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
+              >
+                <LogOut className="h-4 w-4" />
+              </Link>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-1 ring-primary/15">
-              {applicant.name.charAt(0)}
-            </div>
           </div>
-        </div>
+          <nav
+            className="mx-auto hidden max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:flex md:px-6"
+            aria-label="주요 메뉴"
+          >
+            {nav.map((item) => {
+              const active = item.exact
+                ? location.pathname === item.to
+                : location.pathname.startsWith(item.to);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  aria-current={active ? "page" : undefined}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-[var(--shadow-elev-1)]"
+                      : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </header>
+
+        <main className="mx-auto max-w-7xl px-4 py-6 pb-28 md:px-6 md:py-10">
+          <Outlet />
+        </main>
+
         <nav
-          className="mx-auto hidden max-w-7xl gap-1 overflow-x-auto px-4 pb-2 md:flex md:px-6"
-          aria-label="주요 메뉴"
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
+          aria-label="모바일 주요 메뉴"
         >
           {nav.map((item) => {
             const active = item.exact
@@ -58,49 +101,18 @@ function ApplicantLayout() {
                 key={item.to}
                 to={item.to}
                 aria-current={active ? "page" : undefined}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm transition-colors ${
-                  active
-                    ? "bg-primary text-primary-foreground shadow-[var(--shadow-elev-1)]"
-                    : "text-muted-foreground hover:bg-secondary hover:text-secondary-foreground"
+                className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium ${
+                  active ? "text-primary" : "text-muted-foreground"
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
-                {item.label}
+                <Icon className={`h-4 w-4 ${active ? "stroke-[2.4]" : ""}`} />
+                <span className="truncate">{item.label}</span>
               </Link>
             );
           })}
         </nav>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-28 md:px-6 md:py-10">
-        <Outlet />
-      </main>
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t border-border bg-card/95 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur md:hidden"
-        aria-label="모바일 주요 메뉴"
-      >
-        {nav.map((item) => {
-          const active = item.exact
-            ? location.pathname === item.to
-            : location.pathname.startsWith(item.to);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              aria-current={active ? "page" : undefined}
-              className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-medium ${
-                active ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <Icon className={`h-4 w-4 ${active ? "stroke-[2.4]" : ""}`} />
-              <span className="truncate">{item.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </div>
+      </div>
+    </AuthGuard>
   );
 }
 

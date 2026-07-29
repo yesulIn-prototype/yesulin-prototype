@@ -9,8 +9,9 @@ export const Route = createFileRoute("/applicant/applications")({
 });
 
 function MyApplications() {
+  const applicantId = useStore((s) => s.applicant.id);
   const allApps = useStore((s) => s.applications);
-  const apps = allApps.filter((a) => a.applicantId === "me");
+  const apps = allApps.filter((a) => a.applicantId === applicantId);
   const [statusFilter, setStatusFilter] = useState<"전체" | ApplyStatus>("전체");
   const [sort, setSort] = useState<"최신순" | "마감 임박">("최신순");
 
@@ -111,7 +112,7 @@ function MyApplications() {
                 <Link
                   to="/applicant/applications/$appId"
                   params={{ appId: app.id }}
-                  className="rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium hover:bg-secondary"
+                  className="inline-flex min-h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-input bg-background px-4 py-2 text-xs font-semibold leading-none hover:bg-secondary"
                 >
                   제출한 지원서 보기
                 </Link>

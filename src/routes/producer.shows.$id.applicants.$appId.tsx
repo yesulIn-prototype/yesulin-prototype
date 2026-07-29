@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   getApplicationStageProgress,
   getAuditionStages,
+  useProducerWorkspace,
   useStore,
   type StageResult,
 } from "@/lib/store";
@@ -32,8 +33,9 @@ const STAGE_RESULTS: StageResult[] = ["검토 대기", "진행 중", "합격", "
 
 function ApplicantDetail() {
   const { id, appId } = Route.useParams();
-  const show = useStore((s) => s.shows.find((sh) => sh.id === id));
-  const app = useStore((s) => s.applications.find((a) => a.id === appId));
+  const { shows, applications } = useProducerWorkspace();
+  const show = shows.find((item) => item.id === id);
+  const app = applications.find((item) => item.id === appId && item.showId === id);
   const getApplicantById = useStore((s) => s.getApplicantById);
   const updateReview = useStore((s) => s.updateReview);
   const updateStageProgress = useStore((s) => s.updateStageProgress);
