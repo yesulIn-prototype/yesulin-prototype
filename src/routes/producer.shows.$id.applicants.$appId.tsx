@@ -69,7 +69,7 @@ function ApplicantDetail() {
   const roleName = app.roleIds.map((r) => show.roles.find((sr) => sr.id === r)?.name).join(", ");
   const careers = applicant.careers.filter((c) => app.selectedCareerIds.includes(c.id));
   const photos = applicant.photos.filter((p) => app.selectedPhotoIds.includes(p.id));
-  const selectedPhoto = photos.find((photo) => photo.id === selectedPhotoId);
+  const selectedPhoto = applicant.photos.find((photo) => photo.id === selectedPhotoId);
   const profilePhoto =
     photos.find((photo) => photo.image) ?? applicant.photos.find((photo) => photo.image);
   const videos = applicant.videos.filter((v) => app.selectedVideoIds.includes(v.id));
@@ -124,11 +124,21 @@ function ApplicantDetail() {
         <div className="space-y-6">
           <div className="flex items-start gap-4 rounded-2xl border border-border bg-card p-6">
             {profilePhoto?.image ? (
-              <img
-                src={profilePhoto.image}
-                alt={`${applicant.name} 프로필`}
-                className="h-20 w-16 shrink-0 rounded-xl object-cover object-top shadow-sm"
-              />
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoId(profilePhoto.id)}
+                aria-label={`${applicant.name} 프로필 사진 크게 보기`}
+                className="group relative h-28 w-22 shrink-0 overflow-hidden rounded-xl bg-secondary shadow-sm ring-1 ring-border transition hover:ring-2 hover:ring-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <img
+                  src={profilePhoto.image}
+                  alt={`${applicant.name} 프로필`}
+                  className="h-full w-full object-cover object-top transition duration-300 group-hover:scale-[1.03]"
+                />
+                <span className="absolute bottom-2 right-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white shadow-sm backdrop-blur-sm">
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </span>
+              </button>
             ) : (
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
                 {applicant.name.charAt(0)}
