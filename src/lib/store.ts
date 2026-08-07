@@ -1125,8 +1125,8 @@ const shows: Show[] = [
         allowMultiple: true,
       },
     ],
-    deadline: "2026.08.03 22:00",
-    auditionDate: "2026.08.05 – 2026.08.06",
+    deadline: "2026.08.31 22:00",
+    auditionDate: "2026.09.02 – 2026.09.03",
     rehearsalPeriod: "2026.05 – 2026.06",
     showPeriod: "2026.07 – 2026.12",
     venue: "대학로 정극장",
@@ -1171,31 +1171,31 @@ const shows: Show[] = [
     status: "모집 중",
     publicationStatus: "게시됨",
     updatedAt: "2026-04-07T07:03:00.000Z",
-    resultAnnouncementDate: "2026.08.07 15:00",
+    resultAnnouncementDate: "2026.09.04 15:00",
     auditionStages: [
       {
         id: "document",
         name: "1차 서류 전형",
         order: 1,
         type: "서류",
-        date: "2026.07.29 – 2026.08.03 22:00",
-        resultAnnouncementDate: "2026.08.04 15:00",
+        date: "2026.08.05 – 2026.08.31 22:00",
+        resultAnnouncementDate: "2026.09.01 15:00",
       },
       {
         id: "audition-1",
         name: "2차 실기 오디션",
         order: 2,
         type: "오디션",
-        date: "2026.08.05 – 2026.08.06",
+        date: "2026.09.02 – 2026.09.03",
         venue: "서류 합격자에게 개별 안내",
-        resultAnnouncementDate: "2026.08.07 15:00",
+        resultAnnouncementDate: "2026.09.04 15:00",
       },
       {
         id: "final",
         name: "최종 결과",
         order: 3,
         type: "최종",
-        resultAnnouncementDate: "2026.08.07 15:00",
+        resultAnnouncementDate: "2026.09.04 15:00",
       },
     ],
   },
@@ -1664,7 +1664,7 @@ type BundledShowMigration = {
 
 const bundledShowMigrations: Record<string, BundledShowMigration> = {
   "show-hangover-2026-second-half": {
-    revision: 1,
+    revision: 2,
     fields: ["deadline", "auditionDate", "status", "resultAnnouncementDate", "auditionStages"],
   },
   "show-company-connect-ensemble": {
